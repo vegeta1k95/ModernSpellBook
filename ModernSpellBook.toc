@@ -1,0 +1,19 @@
+## Interface: 11200
+## Title: Modern Spellbook
+## Notes: Changes the spellbook to a more modern look inspired by the retail version.
+## Notes-frFR: Modifie le livre de sorts pour un look plus moderne inspiré de la version commerciale.
+## Notes-deDE: Ändert das Zauberbuch zu einem moderneren Aussehen, inspiriert von der Einzelhandelsversion.
+## Notes-esES: Cambia el libro de hechizos a un aspecto más moderno inspirado en la versión comercial.
+## Version: 1.5.2-TW
+## DefaultState: enabled
+
+## SavedVariablesPerCharacter: ModernSpellBook_DB
+
+Compat.lua
+ModernSpellBook.lua
+ActionBar.lua
+SpellbookElements.lua
+Stances.lua
+Talents.lua
+Localization.lua
+Tabs.lua
