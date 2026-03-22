@@ -215,10 +215,6 @@ ModernSpellBookFrame.PLAYER_REGEN_DISABLED = function(self)
     end
     ModernSpellBookFrame.ShowPassiveSpellsCheckBox:Disable()
     ModernSpellBookFrame.ShowPassiveSpellsCheckBox.text:SetTextColor(0.5, 0.5, 0.5)
-    ModernSpellBookFrame.minmaxButton:Disable()
-    if ModernSpellBookFrame.minmaxButton:GetNormalTexture() and ModernSpellBookFrame.minmaxButton:GetNormalTexture().SetDesaturated then
-        ModernSpellBookFrame.minmaxButton:GetNormalTexture():SetDesaturated(true)
-    end
     ModernSpellBookFrame.nextPage:Disable()
     ModernSpellBookFrame.previousPage:Disable()
     if ModernSpellBookFrame.searchBar.Disable then
@@ -244,10 +240,6 @@ ModernSpellBookFrame.PLAYER_REGEN_ENABLED = function(self)
     end
     ModernSpellBookFrame.ShowPassiveSpellsCheckBox:Enable()
     ModernSpellBookFrame.ShowPassiveSpellsCheckBox.text:SetTextColor(1, 0.82, 0)
-    ModernSpellBookFrame.minmaxButton:Enable()
-    if ModernSpellBookFrame.minmaxButton:GetNormalTexture() and ModernSpellBookFrame.minmaxButton:GetNormalTexture().SetDesaturated then
-        ModernSpellBookFrame.minmaxButton:GetNormalTexture():SetDesaturated(false)
-    end
     if ModernSpellBookFrame.searchBar.Enable then
         ModernSpellBookFrame.searchBar:Enable()
     end

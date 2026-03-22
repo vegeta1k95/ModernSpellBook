@@ -92,9 +92,14 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
 
     spellFrame.text = spellFrame.textGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     spellFrame.text:SetPoint("TOPLEFT", spellFrame.textGroup, "TOPLEFT", 0, 0)
-    spellFrame.text:SetTextColor(0.989, 0.857, 0.343)
-    spellFrame.text:SetShadowOffset(1, -1)
-    spellFrame.text:SetShadowColor(0, 0, 0, 0.7)
+    if ModernSpellBook_DB and ModernSpellBook_DB.textColorMode == "dark" then
+        spellFrame.text:SetTextColor(0, 0, 0)
+        spellFrame.text:SetShadowOffset(0, 0)
+    else
+        spellFrame.text:SetTextColor(0.989, 0.857, 0.343)
+        spellFrame.text:SetShadowOffset(1, -1)
+        spellFrame.text:SetShadowColor(0, 0, 0, 0.7)
+    end
     if spellFrame.text.SetWordWrap then spellFrame.text:SetWordWrap(true) end
     spellFrame.text:SetWidth(100)
     spellFrame.text:SetJustifyH("LEFT")
@@ -107,6 +112,9 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
     spellFrame.lightBorder:SetHeight(TOTAL_SPELL_SIZE)
     spellFrame.lightBorder:SetPoint("LEFT", spellFrame, "CENTER", 0, 0)
     spellFrame.lightBorder:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-trail")
+    if ModernSpellBook_DB and ModernSpellBook_DB.textColorMode == "dark" then
+        spellFrame.lightBorder:SetBlendMode("ADD")
+    end
     spellFrame.lightBorder:SetAlpha(1)
 
     -- === SpellIcon container: newGlow -> tile/socket -> icon -> border -> cooldown ===
@@ -176,9 +184,14 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
     -- Rank/passive text inside the text group
     spellFrame.subText = spellFrame.textGroup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     spellFrame.subText:SetPoint("TOPLEFT", spellFrame.text, "BOTTOMLEFT", 0, -1)
-    spellFrame.subText:SetTextColor(1, 1, 1)
-    spellFrame.subText:SetShadowOffset(1, -1)
-    spellFrame.subText:SetShadowColor(0, 0, 0, 0.7)
+    if ModernSpellBook_DB and ModernSpellBook_DB.textColorMode == "dark" then
+        spellFrame.subText:SetTextColor(0, 0, 0)
+        spellFrame.subText:SetShadowOffset(0, 0)
+    else
+        spellFrame.subText:SetTextColor(1, 1, 1)
+        spellFrame.subText:SetShadowOffset(1, -1)
+        spellFrame.subText:SetShadowColor(0, 0, 0, 0.7)
+    end
     spellFrame.subText:SetFont("Fonts\\FRIZQT__.TTF", 9.5)
     spellFrame.subText:SetJustifyH("LEFT")
     if spellFrame.subText.SetWordWrap then spellFrame.subText:SetWordWrap(true) end
@@ -374,6 +387,27 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
             spellFrame:SetScript("OnDragStart", nil)
         end
         spellFrame:Show()
+
+        -- Show/hide fancyFrame based on settings
+        if spellFrame.fancyFrame then
+            local showFrame = true
+            if ModernSpellBook_DB and ModernSpellBook_DB.iconFrame then
+                local isOtherTab = ModernSpellBookFrame.selectedTab and ModernSpellBookFrame.selectedTab > 2
+                if spellInfo.isPassive then
+                    showFrame = ModernSpellBook_DB.iconFrame.passives
+                elseif isOtherTab then
+                    showFrame = ModernSpellBook_DB.iconFrame.other
+                else
+                    showFrame = ModernSpellBook_DB.iconFrame.spells
+                end
+            end
+            if showFrame then
+                spellFrame.fancyFrame:Show()
+            else
+                spellFrame.fancyFrame:Hide()
+            end
+        end
+
         if spellInfo.isPassive then
             spellFrame.icon:SetTexCoord(0.04, 0.96, 0.04, 0.96)
             spellFrame.icon:SetVertexColor(1, 1, 1)
