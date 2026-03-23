@@ -396,6 +396,7 @@ function ModernSpellBookFrame:AddPageButtons()
     end)
 
     local scrollDebounceTimer = 0
+    ModernSpellBookFrame:EnableMouseWheel(true)
     ModernSpellBookFrame:SetScript("OnMouseWheel", function()
         if GetTime() - scrollDebounceTimer < 0.2 then return end
         scrollDebounceTimer = GetTime()
