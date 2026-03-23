@@ -105,6 +105,7 @@ class "CSpellBook"
 		)
 
 		self:SetShape(ModernSpellBook_DB.isMinimized)
+		self:DisableVanillaSpellButtons()
 		self:ForceLoad()
 
 		ModernSpellBookFrame:UnregisterEvent("ADDON_LOADED")
@@ -766,8 +767,25 @@ class "CSpellBook"
 
 	-- ================ HIDE OLD SPELLBOOK =========================
 
+	DisableVanillaSpellButtons = function(self)
+		for i = 1, 20 do
+			local btn = _G["SpellButton" .. i]
+			if (btn) then
+				btn:SetScript("OnUpdate", nil)
+				btn:SetScript("OnEvent", nil)
+				btn:SetScript("OnShow", nil)
+				btn:SetScript("OnClick", nil)
+				btn:SetScript("OnEnter", nil)
+				btn:SetScript("OnLeave", nil)
+				if (btn.UnregisterAllEvents) then
+					btn:UnregisterAllEvents()
+				end
+				btn:Hide()
+			end
+		end
+	end;
+
 	HideOldSpellBook = function(self)
-        
 		for i, region in ipairs( { SpellBookFrame:GetRegions() } ) do
 			region:Hide()
 		end
@@ -775,6 +793,14 @@ class "CSpellBook"
 			local childName = child:GetName()
 			if (childName ~= "ModernSpellBookFrame" and childName ~= "SpellBookCloseButton") then
 				child:Hide()
+				-- Strip scripts from vanilla spell buttons to prevent errors
+				if (child.SetScript) then
+					child:SetScript("OnUpdate", nil)
+					child:SetScript("OnEvent", nil)
+				end
+				if (child.UnregisterAllEvents) then
+					child:UnregisterAllEvents()
+				end
 			end
 		end
 	end;
@@ -901,8 +927,8 @@ SpellBook = CSpellBook()
 if SpellBookFrame_OnShow then
 	local orig_SpellBookFrame_OnShow = SpellBookFrame_OnShow
 	SpellBookFrame_OnShow = function()
-		orig_SpellBookFrame_OnShow()
 		if (ModernSpellBookFrame.isForceLoading) then return end
+		pcall(orig_SpellBookFrame_OnShow)
 		SpellBook:HideOldSpellBook()
 		ModernSpellBookFrame:Show()
 		SpellBookFrame:EnableMouse(false)
@@ -920,7 +946,7 @@ elseif ToggleSpellBook then
 else
 	local origOnShow = SpellBookFrame:GetScript("OnShow")
 	SpellBookFrame:SetScript("OnShow", function()
-		if (origOnShow) then origOnShow() end
+		if (origOnShow) then pcall(origOnShow) end
 		SpellBook:HideOldSpellBook()
 		ModernSpellBookFrame:Show()
 		SpellBookFrame:EnableMouse(false)
