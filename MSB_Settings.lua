@@ -5,7 +5,7 @@ function ModernSpellBookFrame:AddSettingsButton()
     local btn = CreateFrame("Button", nil, ModernSpellBookFrame)
     btn:SetWidth(20)
     btn:SetHeight(20)
-    btn:SetPoint("RIGHT", ModernSpellBookFrame.searchBar, "LEFT", -15, 0)
+    btn:SetPoint("RIGHT", ModernSpellBookFrame.searchBar.frame, "LEFT", -15, 0)
     btn:SetNormalTexture("Interface\\Icons\\INV_Misc_Gear_01")
     btn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
     btn:SetPushedTexture("Interface\\Icons\\INV_Misc_Gear_01")
@@ -31,24 +31,24 @@ function ModernSpellBookFrame:AddSettingsButton()
         for i = 1, 50 do
             local f = ModernSpellBookFrame["Spell"..i]
             if f then
-                if f.text then
-                    f.text:SetTextColor(nameR, nameG, nameB)
-                    f.subText:SetTextColor(subR, subG, subB)
+                if f.nameText then
+                    f.nameText:SetTextColor(nameR, nameG, nameB)
+                    f.rankText:SetTextColor(subR, subG, subB)
                     if isDark then
-                        f.text:SetShadowOffset(0, 0)
-                        f.subText:SetShadowOffset(0, 0)
+                        f.nameText:SetShadowOffset(0, 0)
+                        f.rankText:SetShadowOffset(0, 0)
                     else
-                        f.text:SetShadowOffset(1, -1)
-                        f.text:SetShadowColor(0, 0, 0, 0.7)
-                        f.subText:SetShadowOffset(1, -1)
-                        f.subText:SetShadowColor(0, 0, 0, 0.7)
+                        f.nameText:SetShadowOffset(1, -1)
+                        f.nameText:SetShadowColor(0, 0, 0, 0.7)
+                        f.rankText:SetShadowOffset(1, -1)
+                        f.rankText:SetShadowColor(0, 0, 0, 0.7)
                     end
                 end
-                if f.lightBorder then
+                if f.trailBg then
                     if isDark then
-                        f.lightBorder:SetBlendMode("ADD")
+                        f.trailBg:SetBlendMode("ADD")
                     else
-                        f.lightBorder:SetBlendMode("BLEND")
+                        f.trailBg:SetBlendMode("BLEND")
                     end
                 end
             end
@@ -81,7 +81,7 @@ function ModernSpellBookFrame:AddSettingsButton()
             info.keepShownOnClick = 1
             info.func = function()
                 ModernSpellBook_DB.showSpellCounter = not ModernSpellBook_DB.showSpellCounter
-                ModernSpellBookFrame:UpdateSpellCounter()
+                SpellDataService:UpdateSpellCounter()
             end
             UIDropDownMenu_AddButton(info, level)
 
@@ -249,7 +249,7 @@ function ModernSpellBookFrame:AddSettingsButton()
     -- Hide dropdown when spellbook closes
     ModernSpellBookFrame:SetScript("OnHide", function()
         CloseDropDownMenus()
-        ModernSpellBookFrame:HideAllMultiActionBarGrids()
+        ActionBarHelper:HideAllGrids()
     end)
 end
 

@@ -101,106 +101,11 @@ function ModernSpellBookFrame:AlterOlderSavedVariables()
 end
 
 function ModernSpellBookFrame:AddSearchBar()
-    local defaultText = ModernSpellBookFrame.ClientLocale.SearchAbilities
-
-    -- Build EditBox manually since SearchBoxTemplate doesn't exist in vanilla
-    ModernSpellBookFrame.searchBar = CreateFrame("EditBox", "ModernSpellBookFrameSearchBar", ModernSpellBookFrame)
-    local searchBar = ModernSpellBookFrame.searchBar
-    searchBar:SetWidth(200)
-    searchBar:SetHeight(20)
-    searchBar:SetAutoFocus(false)
-    searchBar:SetFontObject(ChatFontNormal)
-    searchBar:SetTextInsets(16, 20, 0, 0)
-
-    -- Background
-    local left = searchBar:CreateTexture(nil, "BACKGROUND")
-    left:SetTexture("Interface\\Common\\Common-Input-Border")
-    left:SetWidth(8)
-    left:SetHeight(20)
-    left:SetPoint("LEFT", searchBar, "LEFT", -5, 0)
-    left:SetTexCoord(0, 0.0625, 0, 0.625)
-
-    local right = searchBar:CreateTexture(nil, "BACKGROUND")
-    right:SetTexture("Interface\\Common\\Common-Input-Border")
-    right:SetWidth(8)
-    right:SetHeight(20)
-    right:SetPoint("RIGHT", searchBar, "RIGHT", 5, 0)
-    right:SetTexCoord(0.9375, 1, 0, 0.625)
-
-    local mid = searchBar:CreateTexture(nil, "BACKGROUND")
-    mid:SetTexture("Interface\\Common\\Common-Input-Border")
-    mid:SetWidth(10)
-    mid:SetHeight(20)
-    mid:SetPoint("LEFT", left, "RIGHT", 0, 0)
-    mid:SetPoint("RIGHT", right, "LEFT", 0, 0)
-    mid:SetTexCoord(0.0625, 0.9375, 0, 0.625)
-
-    -- Search icon
-    local searchIcon = searchBar:CreateTexture(nil, "OVERLAY")
-    searchIcon:SetWidth(14)
-    searchIcon:SetHeight(14)
-    searchIcon:SetPoint("LEFT", searchBar, "LEFT", 2, 0)
-    searchIcon:SetTexture("Interface\\Common\\UI-Searchbox-Icon")
-    searchIcon:SetVertexColor(0.6, 0.6, 0.6)
-
-    -- Instructions text (placeholder)
-    searchBar.Instructions = searchBar:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-    searchBar.Instructions:SetPoint("LEFT", searchBar, "LEFT", 16, 0)
-    searchBar.Instructions:SetPoint("RIGHT", searchBar, "RIGHT", -20, 0)
-    searchBar.Instructions:SetJustifyH("LEFT")
-    searchBar.Instructions:SetText(defaultText)
-
-    -- Clear button
-    searchBar.clearButton = CreateFrame("Button", nil, searchBar)
-    searchBar.clearButton:SetWidth(14)
-    searchBar.clearButton:SetHeight(14)
-    searchBar.clearButton:SetPoint("RIGHT", searchBar, "RIGHT", -3, 0)
-    searchBar.clearButton:SetNormalTexture("Interface\\FriendsFrame\\ClearBroadcastIcon")
-    searchBar.clearButton:Hide()
-    searchBar.clearButton:SetScript("OnClick", function()
-        searchBar:SetText("")
-        searchBar.Instructions:Show()
-        searchBar.clearButton:Hide()
-        ModernSpellBookFrame:RefreshPage()
-    end)
-
-    searchBar:SetScript("OnTextChanged", function()
-        ModernSpellBookFrame:RefreshPage()
-
-        local inputText = this:GetText()
-        if inputText == "" then
-            searchBar.clearButton:Hide()
-            return
-        end
-
-        searchBar.clearButton:Show()
-    end)
-
-    ModernSpellBookFrame:SetScript("OnMouseDown", function()
-        if ModernSpellBookFrame.searchBar.HasFocus and not ModernSpellBookFrame.searchBar:HasFocus() then return end
-        if ModernSpellBookFrame.searchBar.IsCurrentFocusEditBox and not ModernSpellBookFrame.searchBar:IsCurrentFocusEditBox() then return end
-        ModernSpellBookFrame.searchBar:ClearFocus()
-    end)
-
-    searchBar:SetScript("OnEscapePressed", function() this:ClearFocus() end)
-    searchBar:SetScript("OnEnterPressed", function() this:ClearFocus() end)
-
-    searchBar:SetScript("OnEditFocusLost", function()
-        local inputText = this:GetText()
-        if inputText == "" or string.match(inputText, "^%s*$") then
-            searchBar.Instructions:Show()
-            this:SetText("")
-        end
-
-        this:HighlightText(0, 0)
-
-        ModernSpellBookFrame:RefreshPage()
-    end)
-
-    searchBar:SetScript("OnEditFocusGained", function()
-        this:HighlightText()
-        searchBar.Instructions:Hide()
-    end)
+    ModernSpellBookFrame.searchBar = CSearchBar(
+        ModernSpellBookFrame,
+        ModernSpellBookFrame.ClientLocale.SearchAbilities,
+        function() ModernSpellBookFrame:RefreshPage() end
+    )
 end
 
 function ModernSpellBookFrame:SetupFrame()
@@ -503,10 +408,8 @@ function ModernSpellBookFrame:SetShape(isMainFrameMinimized)
         ModernSpellBookFrame:SetPoint("LEFT", UIParent, "LEFT", 15, windowSettings.posy)
         ModernSpellBookFrame.backgroundRight:Hide()
         ModernSpellBookFrame.backgroundRightEnd:Hide()
+        ModernSpellBookFrame.searchBar:Clear()
         ModernSpellBookFrame.searchBar:Hide()
-        ModernSpellBookFrame.searchBar:SetText("")
-        ModernSpellBookFrame.searchBar.Instructions:Show()
-        ModernSpellBookFrame.searchBar:ClearFocus()
     else
         maximumPages = 2
         ModernSpellBookFrame:SetWidth(windowSettings.width2)
@@ -625,7 +528,7 @@ function ModernSpellBookFrame:RefreshPage()
     if InCombatLockdown() then return end
 
     local filterString = ModernSpellBookFrame.searchBar:GetText() or ""
-    local filteredSpells = ModernSpellBookFrame:FilterSpells(filterString)
+    local filteredSpells = SpellDataService:FilterSpells(filterString)
 
     if next(filteredSpells) == nil then
         ModernSpellBookFrame.noresultsText:Show()
@@ -644,7 +547,7 @@ function ModernSpellBookFrame:DrawPage()
     spellUpdateRequired = false
     ModernSpellBookFrame.stanceButtons = {}
 
-    local AllSpells, isPetTab = ModernSpellBookFrame:GetAvailableSpells()
+    local AllSpells, isPetTab = SpellDataService:GetAvailableSpells()
     ModernSpellBookFrame.AllSpells = AllSpells
     ModernSpellBookFrame.isPetTab = isPetTab
 
@@ -665,7 +568,7 @@ function ModernSpellBookFrame:DrawPage()
     end
 
     ModernSpellBookFrame:RefreshPage()
-    ModernSpellBookFrame:UpdateSpellCounter()
+    SpellDataService:UpdateSpellCounter()
 end
 
 function ModernSpellBookFrame:RefreshPageElements()
@@ -774,13 +677,13 @@ ModernSpellBookFrame:RegisterEvent("SPELLS_CHANGED")
 ModernSpellBookFrame:SetScript("OnEvent", ModernSpellBookFrame.OnEvent)
 
 ModernSpellBookFrame:SetScript("OnHide", function()
-    ModernSpellBookFrame:HideAllMultiActionBarGrids()
+    ActionBarHelper:HideAllGrids()
 end)
 
 ModernSpellBookFrame:SetScript("OnShow", function()
     PlaySound(SOUNDKIT.IG_SPELLBOOK_OPEN)
 
-    ModernSpellBookFrame:ShowAllMultiActionBarGrids()
+    ActionBarHelper:ShowAllGrids()
 
     if ModernSpellBookFrame.isFirstLoad then
         ModernSpellBookFrame:AddAllRanksCheckBox()
@@ -803,7 +706,7 @@ ModernSpellBookFrame:SetScript("OnShow", function()
         ModernSpellBookFrame:PositionAllTabs()
 
         if next(ModernSpellBook_DB.knownSpells) == nil then
-            ModernSpellBookFrame:SetupInitiallyKnownSpells()
+            SpellDataService:SetupInitiallyKnownSpells()
         end
 
         -- Restore last selected tab

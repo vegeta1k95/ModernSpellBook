@@ -1,87 +1,99 @@
+--[[
+	Talent data integration: marks talent-derived spells,
+	collects talent grid positions, handles talent resets.
+--]]
+
 local talentKeyword = string.lower(TALENT.. ";")
 
-function ModernSpellBookFrame:MarkSpellAsTalent(spellInfo)
-    spellInfo.isTalentAbility = true
+class "CTalentService"
+{
+	__init = function(self)
+		local service = self
+		ModernSpellBookFrame.PLAYER_TALENT_UPDATE = function()
+			if (service:GetAllTalentPointsSpent() == 0) then
+				service:ResetKnownTalents()
+			end
+			ModernSpellBookFrame.SPELLS_CHANGED()
+		end
+		ModernSpellBookFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
+	end;
 
-    local lookupString = spellInfo.spellName.. spellInfo.spellRank
-    local lookupContents = ModernSpellBook_DB.knownSpells[lookupString]
+	-- =================== MARK TALENT =============================
 
-    if lookupContents and not string.find(lookupContents, talentKeyword) then
-        ModernSpellBook_DB.knownSpells[lookupString] = lookupContents.. talentKeyword
-    end
-end
+	MarkSpellAsTalent = function(self, spellInfo)
+		spellInfo.isTalentAbility = true
 
-function ModernSpellBookFrame:GetAllTalentPointsSpent()
-    local totalTalentPointsSpent = 0
+		local lookupString = spellInfo.spellName.. spellInfo.spellRank
+		local lookupContents = ModernSpellBook_DB.knownSpells[lookupString]
 
-    for i = 1, GetNumTalentTabs() do
-        -- In vanilla, GetTalentTabInfo returns: name, iconTexture, pointsSpent, background
-        local name, iconTexture, pointsSpent = GetTalentTabInfo(i)
-        totalTalentPointsSpent = totalTalentPointsSpent + (pointsSpent or 0)
-    end
+		if (lookupContents and not string.find(lookupContents, talentKeyword)) then
+			ModernSpellBook_DB.knownSpells[lookupString] = lookupContents.. talentKeyword
+		end
+	end;
 
-    return totalTalentPointsSpent
-end
+	-- =================== QUERY ===================================
 
-function ModernSpellBookFrame:GetAllTalents(showOnlyKnown)
-    local talentGridPositions = {}
-    for t = 1, GetNumTalentTabs() do
-        -- Vanilla GetTalentTabInfo: name, iconTexture, pointsSpent, background
-        local talentGroupName, _, pointsSpent = GetTalentTabInfo(t)
-        if not talentGroupName then break end
+	GetAllTalentPointsSpent = function(self)
+		local totalTalentPointsSpent = 0
+		for i = 1, GetNumTalentTabs() do
+			local name, iconTexture, pointsSpent = GetTalentTabInfo(i)
+			totalTalentPointsSpent = totalTalentPointsSpent + (pointsSpent or 0)
+		end
+		return totalTalentPointsSpent
+	end;
 
-        if pointsSpent > 0 or not showOnlyKnown then
-            talentGridPositions[talentGroupName] = {}
+	GetAllTalents = function(self, showOnlyKnown)
+		local talentGridPositions = {}
+		for t = 1, GetNumTalentTabs() do
+			local talentGroupName, _, pointsSpent = GetTalentTabInfo(t)
+			if (not talentGroupName) then break end
 
-            for i = 1, GetNumTalents(t) do
-                -- Vanilla GetTalentInfo: name, iconTexture, tier, column, currentRank, maxRank
-                local nameTalent, icon, tier, column, currRank, maxRank = GetTalentInfo(t,i)
-                if nameTalent and (currRank > 0 or not showOnlyKnown) then
-                    local spellInfo = {
-                        spellName = nameTalent,
-                        spellIcon = icon,
-                        spellRank = PET_PASSIVE,
-                        spellID = nil,
-                        isPassive = true,
-                        isTalent = true,
-                        talentGrid = {t,i},
-                        category = talentGroupName
-                    }
+			if (pointsSpent > 0 or not showOnlyKnown) then
+				talentGridPositions[talentGroupName] = {}
 
-                    local lookupString = spellInfo.spellName.. spellInfo.spellRank
-                    if ModernSpellBook_DB.knownSpells[lookupString] == nil then
-                        ModernSpellBook_DB.knownSpells[lookupString] = ModernSpellBookFrame:BuildSpellLookupTable(spellInfo).. string.lower(ModernSpellBookFrame:CreateLookup(NEW))
-                    end
+				for i = 1, GetNumTalents(t) do
+					local nameTalent, icon, tier, column, currRank, maxRank = GetTalentInfo(t, i)
+					if (nameTalent and (currRank > 0 or not showOnlyKnown)) then
+						local spellInfo = {
+							spellName = nameTalent,
+							spellIcon = icon,
+							spellRank = PET_PASSIVE,
+							spellID = nil,
+							isPassive = true,
+							isTalent = true,
+							talentGrid = {t, i},
+							category = talentGroupName
+						}
 
-                    table.insert(talentGridPositions[talentGroupName], spellInfo)
-                end
-            end
-        end
-    end
+						local lookupString = spellInfo.spellName.. spellInfo.spellRank
+						if (ModernSpellBook_DB.knownSpells[lookupString] == nil) then
+							ModernSpellBook_DB.knownSpells[lookupString] = SpellDataService:BuildSpellLookupTable(spellInfo).. string.lower(SpellDataService:CreateLookup(NEW))
+						end
 
-    return talentGridPositions
-end
+						table.insert(talentGridPositions[talentGroupName], spellInfo)
+					end
+				end
+			end
+		end
 
-function ModernSpellBookFrame:ResetKnownTalents()
-    local talentGridPositions = ModernSpellBookFrame:GetAllTalents(false)
-    for knownSpell, _ in pairs(ModernSpellBook_DB.knownSpells) do
-        for talentGroupName, talents in pairs(talentGridPositions) do
-            for _, talentInfo in ipairs(talents) do
-                local lookupString = talentInfo.spellName
-                if string.find(knownSpell, lookupString) then
-                    ModernSpellBook_DB.knownSpells[knownSpell] = nil
-                end
-            end
-        end
-    end
-end
+		return talentGridPositions
+	end;
 
-ModernSpellBookFrame.PLAYER_TALENT_UPDATE = function()
-    if ModernSpellBookFrame:GetAllTalentPointsSpent() == 0 then
-        ModernSpellBookFrame:ResetKnownTalents()
-    end
+	-- =================== RESET ===================================
 
-    ModernSpellBookFrame.SPELLS_CHANGED()
-end
+	ResetKnownTalents = function(self)
+		local talentGridPositions = self:GetAllTalents(false)
+		for knownSpell, _ in pairs(ModernSpellBook_DB.knownSpells) do
+			for talentGroupName, talents in pairs(talentGridPositions) do
+				for _, talentInfo in ipairs(talents) do
+					local lookupString = talentInfo.spellName
+					if (string.find(knownSpell, lookupString)) then
+						ModernSpellBook_DB.knownSpells[knownSpell] = nil
+					end
+				end
+			end
+		end
+	end;
+}
 
-ModernSpellBookFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
+TalentService = CTalentService()
