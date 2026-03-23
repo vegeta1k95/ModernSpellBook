@@ -167,6 +167,7 @@ function ModernSpellBookFrame:GetUnlearnedSpells()
 
     -- Build a set of currently known spell+rank combos
     local knownSet = {}
+    local knownHighestRank = {}
     local numTabs = GetNumSpellTabs and GetNumSpellTabs() or 4
     for i = 1, numTabs do
         local tabName, texture, offset, numSpells = GetSpellTabInfo(i)
@@ -175,6 +176,47 @@ function ModernSpellBookFrame:GetUnlearnedSpells()
             local spellName, spellRank = GetSpellName(s, BOOKTYPE_SPELL)
             if spellName then
                 knownSet[spellName .. (spellRank or "")] = true
+                -- Track highest known rank per spell name
+                local _, _, num = string.find(spellRank or "", "(%d+)")
+                local rankNum = tonumber(num) or 0
+                if not knownHighestRank[spellName] or rankNum > knownHighestRank[spellName] then
+                    knownHighestRank[spellName] = rankNum
+                end
+            end
+        end
+    end
+
+    -- Mark all lower ranks as known (replaced spells no longer in spellbook)
+    for key, spellData in pairs(classSpells) do
+        local _, _, num = string.find(spellData.rank or "", "(%d+)")
+        local rankNum = tonumber(num) or 0
+        local highest = knownHighestRank[spellData.name]
+        if highest and rankNum <= highest then
+            knownSet[key] = true
+        end
+    end
+
+    -- Find spells whose Rank 1 comes from an unlearned talent
+    -- Higher ranks of these spells should not show as "available to train"
+    local talentBlockedSpells = {}
+    for t = 1, GetNumTalentTabs() do
+        local talentGroupName = GetTalentTabInfo(t)
+        if talentGroupName then
+            for i = 1, GetNumTalents(t) do
+                local nameTalent, icon, tier, column, currRank, maxRank = GetTalentInfo(t, i)
+                if nameTalent and currRank == 0 then
+                    -- Check if trainer has higher ranks of this spell
+                    local trainerHas = false
+                    for key, spellData in pairs(classSpells) do
+                        if spellData.name == nameTalent then
+                            trainerHas = true
+                            break
+                        end
+                    end
+                    if trainerHas then
+                        talentBlockedSpells[nameTalent] = true
+                    end
+                end
             end
         end
     end
@@ -200,6 +242,7 @@ function ModernSpellBookFrame:GetUnlearnedSpells()
                 isTalent = false,
                 isPetSpell = false,
                 isUnlearned = true,
+                talentBlocked = talentBlockedSpells[spellData.name] or false,
                 levelReq = spellData.levelReq,
                 castName = nil,
                 category = cat,

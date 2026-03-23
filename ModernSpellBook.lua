@@ -332,7 +332,7 @@ function ModernSpellBookFrame:AddAllRanksCheckBox()
     ShowAllSpellRanksCheckbox = CreateFrame("CheckButton", "ShowAllSpellRanksCheckbox", ModernSpellBookFrame, "UICheckButtonTemplate")
     ShowAllSpellRanksCheckbox:SetWidth(20)
     ShowAllSpellRanksCheckbox:SetHeight(20)
-    ShowAllSpellRanksCheckbox:SetChecked(false)
+    ShowAllSpellRanksCheckbox:SetChecked(ModernSpellBook_DB.showAllRanks or false)
 
     ShowAllSpellRanksCheckboxText = ShowAllSpellRanksCheckbox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     ShowAllSpellRanksCheckboxText:SetPoint("TOPLEFT", ShowAllSpellRanksCheckbox, "TOPLEFT", 20, -3.5)
@@ -347,6 +347,7 @@ function ModernSpellBookFrame:AddAllRanksCheckBox()
 
     ShowAllSpellRanksCheckbox:SetScript("OnClick", function()
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+        ModernSpellBook_DB.showAllRanks = this:GetChecked()
         ModernSpellBookFrame:DrawPage()
     end)
 end

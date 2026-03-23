@@ -442,7 +442,7 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
             local availKey = spellInfo.spellName .. (spellInfo.spellRank or "")
             local alreadySeen = ModernSpellBook_DB.seenAvailable and ModernSpellBook_DB.seenAvailable[availKey]
             local hl = ModernSpellBook_DB.highlights
-            if spellInfo.levelReq <= playerLevel and not alreadySeen then
+            if spellInfo.levelReq <= playerLevel and not alreadySeen and not spellInfo.talentBlocked then
                 if hl and hl.availableGlow then
                     spellFrame.availableGlowFrame:ClearAllPoints()
                     spellFrame.availableGlowFrame:SetWidth(60)
