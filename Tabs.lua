@@ -94,6 +94,7 @@ function ModernSpellBookFrame:NewTab(name)
 
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         ModernSpellBookFrame.selectedTab = tabNumber
+        ModernSpellBook_DB.lastTab = tabNumber
 
         tab:SetNormalTexture("Interface\\Spellbook\\UI-SpellBook-Tab3-Selected")
         tab:GetNormalTexture():SetVertexColor(unpack(enabledVertexColor))
@@ -107,6 +108,7 @@ function ModernSpellBookFrame:NewTab(name)
         end
 
         ModernSpellBookFrame.currentPage = 1
+        ModernSpellBook_DB.lastPage = 1
         ModernSpellBookFrame.previousPage:Disable()
         ModernSpellBookFrame:DrawPage()
     end)

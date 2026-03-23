@@ -39,6 +39,9 @@ ModernSpellBookFrame.ADDON_LOADED = function(self, event, addon)
 
     -- Our saved variables
     ModernSpellBook_DB = ModernSpellBook_DB or {showPassives = true, isMinimized = false, knownSpells = {}, addonVersion = currentAddonVersion}
+    if ModernSpellBook_DB.rememberPage == nil then
+        ModernSpellBook_DB.rememberPage = true
+    end
     if ModernSpellBook_DB.showUnlearned == nil then
         ModernSpellBook_DB.showUnlearned = true
     end
@@ -51,7 +54,7 @@ ModernSpellBookFrame.ADDON_LOADED = function(self, event, addon)
     ModernSpellBookFrame:AlterOlderSavedVariables()
 
     ModernSpellBookFrame.ClientLocale = ModernSpellBookFrame.Locales[GetLocale()] or ModernSpellBookFrame.Locales["enUS"]
-    ModernSpellBookFrame.currentPage = 1
+    ModernSpellBookFrame.currentPage = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastPage or 1
     ModernSpellBookFrame.maxPages = 1
     ModernSpellBookFrame.stanceButtons = {}
     ModernSpellBookFrame.unlockedStances = {}
@@ -376,6 +379,7 @@ function ModernSpellBookFrame:AddPageButtons()
 
         PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN)
         ModernSpellBookFrame.currentPage = math.max(1, ModernSpellBookFrame.currentPage -1)
+        ModernSpellBook_DB.lastPage = ModernSpellBookFrame.currentPage
         ModernSpellBookFrame:RefreshPageElements()
     end)
 
@@ -392,6 +396,7 @@ function ModernSpellBookFrame:AddPageButtons()
 
         PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN)
         ModernSpellBookFrame.currentPage = math.min(ModernSpellBookFrame.currentPage +1, ModernSpellBookFrame.maxPages)
+        ModernSpellBook_DB.lastPage = ModernSpellBookFrame.currentPage
         ModernSpellBookFrame:RefreshPageElements()
     end)
 
@@ -474,6 +479,16 @@ function ModernSpellBookFrame:AddSettingsButton()
         local info = {}
 
         if level == 1 then
+            -- Remember page
+            info = {}
+            info.text = "Remember page"
+            info.checked = ModernSpellBook_DB.rememberPage
+            info.keepShownOnClick = 1
+            info.func = function()
+                ModernSpellBook_DB.rememberPage = not ModernSpellBook_DB.rememberPage
+            end
+            UIDropDownMenu_AddButton(info, level)
+
             -- Show unlearned spells
             info = {}
             info.text = "Show unlearned"
@@ -1537,7 +1552,7 @@ ModernSpellBookFrame:SetScript("OnShow", function()
         ModernSpellBookFrame.searchBar:SetPoint("RIGHT", ModernSpellBookFrame:GetRightmostLeftButton(), "LEFT", -10, 1)
         if wasSearchBarShown then ModernSpellBookFrame.searchBar:Show() end
 
-        ModernSpellBookFrame.selectedTab = 1
+        ModernSpellBookFrame.selectedTab = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastTab or 1
         ModernSpellBookFrame.tab1 = ModernSpellBookFrame:NewTab(className)
         ModernSpellBookFrame.tab2 = ModernSpellBookFrame:NewTab(GENERAL)
         ModernSpellBookFrame.tab3 = ModernSpellBookFrame:NewTab("Pet")
@@ -1551,6 +1566,12 @@ ModernSpellBookFrame:SetScript("OnShow", function()
         if next(ModernSpellBook_DB.knownSpells) == nil then
             ModernSpellBookFrame:SetupInitiallyKnownSpells()
         end
+
+        -- Restore last selected tab
+        local lastTab = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastTab or 1
+        if lastTab > 1 and ModernSpellBookFrame.Tabgroups[lastTab] then
+            ModernSpellBookFrame.Tabgroups[lastTab]:Click()
+        end
     else
         ModernSpellBookFrame.tab3:UpdateAsPetTab()
     end
@@ -1562,6 +1583,24 @@ ModernSpellBookFrame:SetScript("OnShow", function()
     -- Always hide old spellbook elements when showing our frame
     -- (vanilla SpellBookFrame_OnShow re-shows its children each time)
     ModernSpellBookFrame:HideOldSpellBook()
+
+    -- Reset to page 1 / tab 1 if "Remember page" is off
+    if not ModernSpellBook_DB.rememberPage then
+        ModernSpellBookFrame.currentPage = 1
+        if ModernSpellBookFrame.selectedTab ~= 1 and ModernSpellBookFrame.Tabgroups[1] then
+            ModernSpellBookFrame.selectedTab = 1
+            -- Visually reset tabs without triggering a separate DrawPage
+            for _, tab in ipairs(ModernSpellBookFrame.Tabgroups) do
+                tab:SetNormalTexture("Interface\\Spellbook\\UI-SpellBook-Tab-Unselected")
+                tab:GetNormalTexture():SetVertexColor(0.5, 0.5, 0.5, 1)
+                tab:GetFontString():SetTextColor(0.5, 0.41, 0)
+            end
+            ModernSpellBookFrame.Tabgroups[1]:SetNormalTexture("Interface\\Spellbook\\UI-SpellBook-Tab3-Selected")
+            ModernSpellBookFrame.Tabgroups[1]:GetNormalTexture():SetVertexColor(1, 1, 1, 1)
+            ModernSpellBookFrame.Tabgroups[1]:GetFontString():SetTextColor(1, 0.82, 0)
+        end
+        spellUpdateRequired = true
+    end
 
     if spellUpdateRequired then
         ModernSpellBookFrame:DrawPage()
