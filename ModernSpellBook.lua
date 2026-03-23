@@ -413,7 +413,7 @@ function ModernSpellBookFrame:AddSettingsButton()
     btn:SetPushedTexture("Interface\\Icons\\INV_Misc_Gear_01")
 
     if not ModernSpellBook_DB.iconFrame then
-        ModernSpellBook_DB.iconFrame = { spells = true, passives = true, other = false, unlearned = false }
+        ModernSpellBook_DB.iconFrame = { spells = true, passives = true, other = true, unlearned = false }
     end
     if ModernSpellBook_DB.iconFrame.unlearned == nil then
         ModernSpellBook_DB.iconFrame.unlearned = false
