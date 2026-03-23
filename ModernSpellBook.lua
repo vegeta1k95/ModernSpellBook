@@ -1596,3 +1596,10 @@ else
         SpellBookFrame:EnableMouse(false)
     end)
 end
+
+-- Reset seen-available list on level up so newly available spells glow
+local levelTracker = CreateFrame("Frame")
+levelTracker:RegisterEvent("PLAYER_LEVEL_UP")
+levelTracker:SetScript("OnEvent", function()
+    ModernSpellBook_DB.seenAvailable = {}
+end)

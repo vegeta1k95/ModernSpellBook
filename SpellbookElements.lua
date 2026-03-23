@@ -167,14 +167,17 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
     spellFrame.lightBorder:SetAlpha(1)
 
     -- === SpellIcon container: newGlow -> tile/socket -> icon -> border -> cooldown ===
-    -- Layer 1 (bottom): New spell glow
-    spellFrame.newGlow = spellFrame:CreateTexture(nil, "BACKGROUND")
-    spellFrame.newGlow:SetWidth(70)
-    spellFrame.newGlow:SetHeight(62)
-    spellFrame.newGlow:SetPoint("CENTER", spellFrame, "CENTER", 0, 0)
+    -- New spell glow (on top of everything)
+    spellFrame.newGlowFrame = CreateFrame("Frame", nil, spellFrame)
+    spellFrame.newGlowFrame:SetWidth(60)
+    spellFrame.newGlowFrame:SetHeight(60)
+    spellFrame.newGlowFrame:SetPoint("CENTER", spellFrame, "CENTER", 0, 0)
+    spellFrame.newGlowFrame:SetFrameLevel(spellFrame:GetFrameLevel() + 15)
+    spellFrame.newGlow = spellFrame.newGlowFrame:CreateTexture(nil, "OVERLAY")
+    spellFrame.newGlow:SetAllPoints(spellFrame.newGlowFrame)
     spellFrame.newGlow:SetTexture("Interface\\Buttons\\CheckButtonGlow")
     spellFrame.newGlow:SetBlendMode("ADD")
-    spellFrame.newGlow:SetAlpha(0.8)
+    spellFrame.newGlow:SetAlpha(1)
 
     -- Layer 2: Tile/socket background
     spellFrame.tile = spellFrame:CreateTexture(nil, "ARTWORK")
@@ -277,6 +280,39 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
     spellFrame.activeLight:SetBlendMode("ADD")
     spellFrame.activeLight:SetAlpha(0)
 
+    -- Glow for unlearned spells that are now available to learn (tinted light blue)
+    spellFrame.availableGlowFrame = CreateFrame("Frame", nil, spellFrame)
+    spellFrame.availableGlowFrame:SetWidth(70)
+    spellFrame.availableGlowFrame:SetHeight(62)
+    spellFrame.availableGlowFrame:SetFrameLevel(spellFrame:GetFrameLevel() + 8)
+    spellFrame.availableGlowFrame:Hide()
+    spellFrame.availableGlow = spellFrame.availableGlowFrame:CreateTexture(nil, "OVERLAY")
+    spellFrame.availableGlow:SetAllPoints(spellFrame.availableGlowFrame)
+    spellFrame.availableGlow:SetTexture("Interface\\Buttons\\CheckButtonGlow")
+    spellFrame.availableGlow:SetBlendMode("ADD")
+    spellFrame.availableGlow:SetVertexColor(0.204, 0.765, 0.922)
+    spellFrame.availableGlow:SetAlpha(1)
+
+    -- "New" badge for available-to-learn spells
+    spellFrame.newBadge = CreateFrame("Frame", nil, spellFrame.availableGlowFrame)
+    spellFrame.newBadge:SetWidth(28)
+    spellFrame.newBadge:SetHeight(14)
+    spellFrame.newBadge:SetPoint("BOTTOM", spellFrame.icon, "TOP", 0, 0)
+    spellFrame.newBadge:SetFrameLevel(spellFrame:GetFrameLevel() + 9)
+    spellFrame.newBadge:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 8, edgeSize = 8,
+        insets = { left = 2, right = 2, top = 2, bottom = 2 }
+    })
+    spellFrame.newBadge:SetBackdropColor(0, 0.8, 0, 0.5)
+    spellFrame.newBadge:SetBackdropBorderColor(0, 0.6, 0, 0.5)
+    spellFrame.newBadgeText = spellFrame.newBadge:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    spellFrame.newBadgeText:SetPoint("CENTER", spellFrame.newBadge, "CENTER", 0, 0)
+    spellFrame.newBadgeText:SetText("New")
+    spellFrame.newBadgeText:SetFont("Fonts\\FRIZQT__.TTF", 8)
+    spellFrame.newBadgeText:SetTextColor(1, 1, 1)
+
     spellFrame.icon.isPassive = false
 
     function spellFrame:SetStance(isActive)
@@ -359,10 +395,30 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
         local knownSpell = ModernSpellBook_DB.knownSpells[lookupString]
         local isNew = knownSpell and string.find(knownSpell, NEW_KEYWORD) ~= nil
 
-        if isNew then
-            spellFrame.newGlow:Show()
+        if isNew and not spellInfo.isPassive then
+            spellFrame.newGlowFrame:ClearAllPoints()
+            spellFrame.newGlowFrame:SetPoint("CENTER", spellFrame.icon, "CENTER", 0.5, 0)
+            spellFrame.newGlowFrame:Show()
         else
-            spellFrame.newGlow:Hide()
+            spellFrame.newGlowFrame:Hide()
+        end
+
+        -- Show animated glow for unlearned trainer spells now available at player's level
+        if spellInfo.isUnlearned and not spellInfo.isTalent and spellInfo.levelReq then
+            local playerLevel = UnitLevel("player")
+            local availKey = spellInfo.spellName .. (spellInfo.spellRank or "")
+            local alreadySeen = ModernSpellBook_DB.seenAvailable and ModernSpellBook_DB.seenAvailable[availKey]
+            if spellInfo.levelReq <= playerLevel and not alreadySeen then
+                spellFrame.availableGlowFrame:ClearAllPoints()
+                spellFrame.availableGlowFrame:SetWidth(60)
+                spellFrame.availableGlowFrame:SetHeight(60)
+                spellFrame.availableGlowFrame:SetPoint("CENTER", spellFrame.icon, "CENTER", 0, 0)
+                spellFrame.availableGlowFrame:Show()
+            else
+                spellFrame.availableGlowFrame:Hide()
+            end
+        else
+            spellFrame.availableGlowFrame:Hide()
         end
 
         spellFrame:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", HORIZONTAL_OFFSET +SPELL_INSET +SECOND_PAGE_OFFSET*(page -1) +grid_x *SPELL_HORIZONTAL_SPACING, -80 +currentPageRows *-VERTICAL_SPACING)
@@ -400,11 +456,21 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
         spellFrame:SetScript("OnEnter", function()
             spellFrame.checkedGlow:SetAlpha(spellFrame.checkedGlow.checkedAlpha)
 
+            -- Dismiss available-to-learn glow on hover
+            if spellFrame.availableGlowFrame:IsShown() then
+                spellFrame.availableGlowFrame:Hide()
+                if not ModernSpellBook_DB.seenAvailable then
+                    ModernSpellBook_DB.seenAvailable = {}
+                end
+                local availKey = spellInfo.spellName .. (spellInfo.spellRank or "")
+                ModernSpellBook_DB.seenAvailable[availKey] = true
+            end
+
             if isNew then
                 ModernSpellBook_DB.knownSpells[lookupString] = string.gsub(ModernSpellBook_DB.knownSpells[lookupString], NEW_KEYWORD, "")
                 isNew = false
             end
-            spellFrame.newGlow:Hide()
+            spellFrame.newGlowFrame:Hide()
 
             GameTooltip:SetOwner(spellFrame, "ANCHOR_RIGHT")
             if spellInfo.isUnlearned then
