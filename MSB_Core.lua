@@ -105,7 +105,7 @@ class "CSpellBook"
 		)
 
 		self:SetShape(ModernSpellBook_DB.isMinimized)
-		self:DisableVanillaSpellButtons()
+		self:DisableVanillaSpellBook()
 		self:ForceLoad()
 
 		ModernSpellBookFrame:UnregisterEvent("ADDON_LOADED")
@@ -115,7 +115,6 @@ class "CSpellBook"
 		if (ModernSpellBookFrame.isFirstLoad) then return end
 
 		if (ModernSpellBookFrame:IsVisible()) then
-			self:HideOldSpellBook()
 			C_Timer.After(0.3, function()
 				ModernSpellBookFrame.tab3:UpdateAsPetTab()
 				SpellBook:DrawPage()
@@ -163,7 +162,6 @@ class "CSpellBook"
 		end
 
 		self:CreateCustomTabs()
-		self:HideOldSpellBook()
 
 		-- Reset to page 1 / tab 1 if "Remember page" is off
 		if (not ModernSpellBook_DB.rememberPage) then
@@ -767,25 +765,7 @@ class "CSpellBook"
 
 	-- ================ HIDE OLD SPELLBOOK =========================
 
-	DisableVanillaSpellButtons = function(self)
-		for i = 1, 20 do
-			local btn = _G["SpellButton" .. i]
-			if (btn) then
-				btn:SetScript("OnUpdate", nil)
-				btn:SetScript("OnEvent", nil)
-				btn:SetScript("OnShow", nil)
-				btn:SetScript("OnClick", nil)
-				btn:SetScript("OnEnter", nil)
-				btn:SetScript("OnLeave", nil)
-				if (btn.UnregisterAllEvents) then
-					btn:UnregisterAllEvents()
-				end
-				btn:Hide()
-			end
-		end
-	end;
-
-	HideOldSpellBook = function(self)
+	DisableVanillaSpellBook = function(self)
 		for i, region in ipairs( { SpellBookFrame:GetRegions() } ) do
 			region:Hide()
 		end
@@ -793,14 +773,6 @@ class "CSpellBook"
 			local childName = child:GetName()
 			if (childName ~= "ModernSpellBookFrame" and childName ~= "SpellBookCloseButton") then
 				child:Hide()
-				-- Strip scripts from vanilla spell buttons to prevent errors
-				if (child.SetScript) then
-					child:SetScript("OnUpdate", nil)
-					child:SetScript("OnEvent", nil)
-				end
-				if (child.UnregisterAllEvents) then
-					child:UnregisterAllEvents()
-				end
 			end
 		end
 	end;
@@ -921,36 +893,14 @@ class "CSpellBook"
 SpellBook = CSpellBook()
 
 -- ============================================================
--- Hook SpellBookFrame to show ModernSpellBookFrame
+-- Replace vanilla SpellBookFrame behavior entirely.
+-- We don't wrap the original — we replace it.
 -- ============================================================
 
-if SpellBookFrame_OnShow then
-	local orig_SpellBookFrame_OnShow = SpellBookFrame_OnShow
-	SpellBookFrame_OnShow = function()
-		if (ModernSpellBookFrame.isForceLoading) then return end
-		pcall(orig_SpellBookFrame_OnShow)
-		SpellBook:HideOldSpellBook()
-		ModernSpellBookFrame:Show()
-		SpellBookFrame:EnableMouse(false)
-	end
-elseif ToggleSpellBook then
-	local orig_ToggleSpellBook = ToggleSpellBook
-	ToggleSpellBook = function(bookType)
-		orig_ToggleSpellBook(bookType)
-		if (SpellBookFrame:IsVisible()) then
-			SpellBook:HideOldSpellBook()
-			ModernSpellBookFrame:Show()
-			SpellBookFrame:EnableMouse(false)
-		end
-	end
-else
-	local origOnShow = SpellBookFrame:GetScript("OnShow")
-	SpellBookFrame:SetScript("OnShow", function()
-		if (origOnShow) then pcall(origOnShow) end
-		SpellBook:HideOldSpellBook()
-		ModernSpellBookFrame:Show()
-		SpellBookFrame:EnableMouse(false)
-	end)
+SpellBookFrame_OnShow = function()
+	if (ModernSpellBookFrame.isForceLoading) then return end
+	ModernSpellBookFrame:Show()
+	SpellBookFrame:EnableMouse(false)
 end
 
 -- Reset seen-available list on level up
