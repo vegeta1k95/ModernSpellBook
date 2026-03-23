@@ -63,6 +63,17 @@ function ModernSpellBookFrame:CaptureTrainerData()
         ["Defense"] = true,
         ["Weapons"] = true,
         ["Armor"] = true,
+        ["Plate Mail"] = true,
+        ["Mail"] = true,
+        ["Leather"] = true,
+        ["Shield"] = true,
+    }
+
+    -- Spells to skip entirely (armor/weapon proficiencies that don't appear in spellbook when learned)
+    local skipSpells = {
+        ["Plate Mail"] = true, ["Mail"] = true, ["Leather"] = true,
+        ["Shield"] = true, ["Block"] = true, ["Parry"] = true, ["Dodge"] = true,
+        ["Dual Wield"] = true,
     }
 
     for i = 1, numServices do
@@ -84,8 +95,10 @@ function ModernSpellBookFrame:CaptureTrainerData()
                 if iconOk then icon = iconResult or "" end
             end
 
-            -- Category headers have no icon - use them to track current spec
-            if not icon or icon == "" or icon == 0 then
+            -- Skip armor/weapon proficiency spells
+            if skipSpells[name] then
+                -- do nothing
+            elseif not icon or icon == "" or icon == 0 then
                 if generalCategories[name] then
                     currentSpecHeader = GENERAL or "General"
                 else
