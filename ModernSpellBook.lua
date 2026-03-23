@@ -42,6 +42,9 @@ ModernSpellBookFrame.ADDON_LOADED = function(self, event, addon)
     if ModernSpellBook_DB.showUnlearned == nil then
         ModernSpellBook_DB.showUnlearned = true
     end
+    if not ModernSpellBook_DB.fontSize then
+        ModernSpellBook_DB.fontSize = 11.5
+    end
     if not ModernSpellBook_DB.highlights then
         ModernSpellBook_DB.highlights = { learnedGlow = true, learnedBadge = true, availableGlow = true, availableBadge = true }
     end
@@ -489,6 +492,14 @@ function ModernSpellBookFrame:AddSettingsButton()
             info.value = "highlights"
             UIDropDownMenu_AddButton(info, level)
 
+            -- Font size submenu
+            info = {}
+            info.text = "Font size"
+            info.hasArrow = 1
+            info.notCheckable = 1
+            info.value = "fontSize"
+            UIDropDownMenu_AddButton(info, level)
+
             -- Spell Text Color submenu
             info = {}
             info.text = "Spell text color"
@@ -526,6 +537,21 @@ function ModernSpellBookFrame:AddSettingsButton()
                     CloseDropDownMenus()
                 end
                 UIDropDownMenu_AddButton(info, level)
+
+            elseif UIDROPDOWNMENU_MENU_VALUE == "fontSize" then
+                local sizes = {9, 10, 10.5, 11, 11.5, 12, 13}
+                for _, size in ipairs(sizes) do
+                    info = {}
+                    info.text = size
+                    info.value = size
+                    info.checked = (ModernSpellBook_DB.fontSize == size)
+                    info.func = function()
+                        ModernSpellBook_DB.fontSize = this.value
+                        ModernSpellBookFrame:DrawPage()
+                        CloseDropDownMenus()
+                    end
+                    UIDropDownMenu_AddButton(info, level)
+                end
 
             elseif UIDROPDOWNMENU_MENU_VALUE == "highlights" then
                 info = {}

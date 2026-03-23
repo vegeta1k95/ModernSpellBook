@@ -152,7 +152,7 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
     if spellFrame.text.SetWordWrap then spellFrame.text:SetWordWrap(true) end
     spellFrame.text:SetWidth(98)
     spellFrame.text:SetJustifyH("LEFT")
-    spellFrame.text:SetFont("Fonts\\FRIZQT__.TTF", 11.5)
+    spellFrame.text:SetFont("Fonts\\FRIZQT__.TTF", ModernSpellBook_DB and ModernSpellBook_DB.fontSize or 11.5)
     if spellFrame.text.SetJustifyV then spellFrame.text:SetJustifyV("TOP") end
 
     -- Light border behind text area
@@ -370,6 +370,9 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
                 CastSpellByName(spellInfo.castName)
             end
         end)
+
+        -- Update font size from settings
+        spellFrame.text:SetFont("Fonts\\FRIZQT__.TTF", ModernSpellBook_DB and ModernSpellBook_DB.fontSize or 11.5)
 
         spellFrame.icon:SetTexture(spellInfo.spellIcon)
         spellFrame.text:SetText(spellInfo.spellName)
