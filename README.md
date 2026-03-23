@@ -53,5 +53,4 @@ To see unlearned spells in your spellbook, visit a class trainer in a major city
 
 ## Credits
 
-- Original [ModernSpellBook](https://github.com/) addon for WoW Classic Season of Discovery
-- Ported and extended for Turtle WoW
+- Original [ModernSpellBook](https://www.curseforge.com/wow/addons/modern-spellbook) addon for WoW Classic Season of Discovery
