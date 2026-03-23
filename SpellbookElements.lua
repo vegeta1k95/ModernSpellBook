@@ -135,7 +135,7 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
 
     -- Text container - vertically centered on the icon
     spellFrame.textGroup = CreateFrame("Frame", nil, spellFrame)
-    spellFrame.textGroup:SetWidth(100)
+    spellFrame.textGroup:SetWidth(98)
     spellFrame.textGroup:SetHeight(SPELL_ICON_SIZE)
     spellFrame.textGroup:SetPoint("LEFT", spellFrame, "LEFT", 36, 0)
 
@@ -150,7 +150,7 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
         spellFrame.text:SetShadowColor(0, 0, 0, 0.7)
     end
     if spellFrame.text.SetWordWrap then spellFrame.text:SetWordWrap(true) end
-    spellFrame.text:SetWidth(100)
+    spellFrame.text:SetWidth(98)
     spellFrame.text:SetJustifyH("LEFT")
     spellFrame.text:SetFont("Fonts\\FRIZQT__.TTF", 11.5)
     if spellFrame.text.SetJustifyV then spellFrame.text:SetJustifyV("TOP") end
