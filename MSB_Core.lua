@@ -710,7 +710,7 @@ function ModernSpellBookFrame:RefreshPageElements()
         else
             grid_x = math.mod(grid_x + 1, 3)
             totalSpells = totalSpells +1
-            ModernSpellBookFrame:GetOrCreateSpellFrame(totalSpells):Set(element.spellInfo, element.currentPageRows, element.drawingPageNumber, grid_x)
+            ModernSpellBookFrame:GetOrCreateSpellItem(totalSpells):Set(element.spellInfo, element.currentPageRows, element.drawingPageNumber, grid_x)
         end
     end
 end

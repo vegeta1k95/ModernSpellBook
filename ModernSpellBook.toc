@@ -17,6 +17,8 @@ MSB_Core.lua
 MSB_SpellData.lua
 MSB_Settings.lua
 MSB_ActionBar.lua
+MSB_SpellIcon.lua
+MSB_SpellItem.lua
 MSB_SpellFrame.lua
 MSB_Stances.lua
 MSB_TrainerData.lua
