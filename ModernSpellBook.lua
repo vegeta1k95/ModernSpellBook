@@ -39,6 +39,9 @@ ModernSpellBookFrame.ADDON_LOADED = function(self, event, addon)
 
     -- Our saved variables
     ModernSpellBook_DB = ModernSpellBook_DB or {showPassives = true, isMinimized = false, knownSpells = {}, addonVersion = currentAddonVersion}
+    if ModernSpellBook_DB.showUnlearned == nil then
+        ModernSpellBook_DB.showUnlearned = true
+    end
     ModernSpellBookFrame:AlterOlderSavedVariables()
 
     ModernSpellBookFrame.ClientLocale = ModernSpellBookFrame.Locales[GetLocale()] or ModernSpellBookFrame.Locales["enUS"]
@@ -283,6 +286,14 @@ function ModernSpellBookFrame:SetupFrame()
     ModernSpellBookFrame.noresultsText:SetShadowOffset(0, 0)
     ModernSpellBookFrame.noresultsText:Hide()
 
+    -- Trainer hint - subtle bottom text
+    ModernSpellBookFrame.trainerHint = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    ModernSpellBookFrame.trainerHint:SetPoint("BOTTOM", ModernSpellBookFrame, "BOTTOM", 0, 15)
+    ModernSpellBookFrame.trainerHint:SetText("Visit a class trainer in a major city to fetch the FULL list of available spells.")
+    ModernSpellBookFrame.trainerHint:SetFont("Fonts\\FRIZQT__.TTF", 10)
+    ModernSpellBookFrame.trainerHint:SetTextColor(0.6, 0.6, 0.6)
+    ModernSpellBookFrame.trainerHint:Hide()
+
     -- UIPanelLayout attributes - try SetAttribute first, fall back to UIPanelWindows table
     if SpellBookFrame.SetAttribute then
         SpellBookFrame:SetAttribute("UIPanelLayout-defined", true)
@@ -402,7 +413,10 @@ function ModernSpellBookFrame:AddSettingsButton()
     btn:SetPushedTexture("Interface\\Icons\\INV_Misc_Gear_01")
 
     if not ModernSpellBook_DB.iconFrame then
-        ModernSpellBook_DB.iconFrame = { spells = true, passives = true, other = true }
+        ModernSpellBook_DB.iconFrame = { spells = true, passives = true, other = false, unlearned = false }
+    end
+    if ModernSpellBook_DB.iconFrame.unlearned == nil then
+        ModernSpellBook_DB.iconFrame.unlearned = false
     end
 
     -- Apply text color settings live
@@ -452,6 +466,17 @@ function ModernSpellBookFrame:AddSettingsButton()
         local info = {}
 
         if level == 1 then
+            -- Show unlearned spells
+            info = {}
+            info.text = "Show unlearned"
+            info.checked = ModernSpellBook_DB.showUnlearned
+            info.keepShownOnClick = 1
+            info.func = function()
+                ModernSpellBook_DB.showUnlearned = not ModernSpellBook_DB.showUnlearned
+                ModernSpellBookFrame:DrawPage()
+            end
+            UIDropDownMenu_AddButton(info, level)
+
             -- Spell Text Color submenu
             info = {}
             info.text = "Spell text color"
@@ -475,7 +500,7 @@ function ModernSpellBookFrame:AddSettingsButton()
                 info.checked = ModernSpellBook_DB.textColorMode ~= "dark"
                 info.func = function()
                     ModernSpellBook_DB.textColorMode = "light"
-                    applyTextColors()
+                    ModernSpellBookFrame:DrawPage()
                     CloseDropDownMenus()
                 end
                 UIDropDownMenu_AddButton(info, level)
@@ -485,7 +510,7 @@ function ModernSpellBookFrame:AddSettingsButton()
                 info.checked = ModernSpellBook_DB.textColorMode == "dark"
                 info.func = function()
                     ModernSpellBook_DB.textColorMode = "dark"
-                    applyTextColors()
+                    ModernSpellBookFrame:DrawPage()
                     CloseDropDownMenus()
                 end
                 UIDropDownMenu_AddButton(info, level)
@@ -517,6 +542,16 @@ function ModernSpellBookFrame:AddSettingsButton()
                 info.keepShownOnClick = 1
                 info.func = function()
                     ModernSpellBook_DB.iconFrame.other = not ModernSpellBook_DB.iconFrame.other
+                    ModernSpellBookFrame:DrawPage()
+                end
+                UIDropDownMenu_AddButton(info, level)
+
+                info = {}
+                info.text = "Unlearned"
+                info.checked = ModernSpellBook_DB.iconFrame.unlearned
+                info.keepShownOnClick = 1
+                info.func = function()
+                    ModernSpellBook_DB.iconFrame.unlearned = not ModernSpellBook_DB.iconFrame.unlearned
                     ModernSpellBookFrame:DrawPage()
                 end
                 UIDropDownMenu_AddButton(info, level)
@@ -714,30 +749,62 @@ function ModernSpellBookFrame:CreateLookup(lookupWord)
 end
 
 -- Filter spell list to only keep highest rank of each spell
+-- Rules: always keep highest LEARNED rank, plus the next UNLEARNED rank above it
 function ModernSpellBookFrame:FilterHighestRanks(spellList)
-    -- Parse rank number from rank string (e.g., "Rank 5" -> 5)
     local function getRankNum(rankStr)
         if not rankStr or rankStr == "" then return 0 end
+        -- "Talent" counts as rank 1 (it's the first rank obtained from talent tree)
+        if rankStr == "Talent" then return 1 end
         local _, _, num = string.find(rankStr, "(%d+)")
         return tonumber(num) or 0
     end
 
-    -- First pass: find highest rank for each spell name
-    local highestRank = {}
+    -- First pass: find highest LEARNED rank for each spell name
+    local highestLearnedRank = {}
     for _, spellInfo in ipairs(spellList) do
-        local name = spellInfo.spellName
-        local rankNum = getRankNum(spellInfo.spellRank)
-        if not highestRank[name] or rankNum > highestRank[name] then
-            highestRank[name] = rankNum
+        if not spellInfo.isUnlearned then
+            local name = spellInfo.spellName
+            local rankNum = getRankNum(spellInfo.spellRank)
+            if not highestLearnedRank[name] or rankNum > highestLearnedRank[name] then
+                highestLearnedRank[name] = rankNum
+            end
         end
     end
 
-    -- Second pass: keep only highest rank entries
+    -- Second pass: find the closest UNLEARNED rank above the highest learned
+    local nextUnlearnedRank = {}
+    for _, spellInfo in ipairs(spellList) do
+        if spellInfo.isUnlearned then
+            local name = spellInfo.spellName
+            local rankNum = getRankNum(spellInfo.spellRank)
+            local learnedRank = highestLearnedRank[name] or 0
+            if rankNum > learnedRank then
+                if not nextUnlearnedRank[name] or rankNum < nextUnlearnedRank[name] then
+                    nextUnlearnedRank[name] = rankNum
+                end
+            end
+        end
+    end
+
+    -- Third pass: keep highest learned + next unlearned + spells with no ranks
     local filtered = {}
     for _, spellInfo in ipairs(spellList) do
+        local name = spellInfo.spellName
         local rankNum = getRankNum(spellInfo.spellRank)
-        if rankNum >= highestRank[spellInfo.spellName] then
-            table.insert(filtered, spellInfo)
+
+        if spellInfo.isUnlearned then
+            -- Keep only the next unlearned rank, or unlearned spells with no learned version
+            if nextUnlearnedRank[name] and rankNum == nextUnlearnedRank[name] then
+                table.insert(filtered, spellInfo)
+            elseif not highestLearnedRank[name] and rankNum == 0 then
+                -- Spell has no ranks and no learned version at all
+                table.insert(filtered, spellInfo)
+            end
+        else
+            -- Keep highest learned rank (or rankless spells)
+            if rankNum == 0 or rankNum >= (highestLearnedRank[name] or 0) then
+                table.insert(filtered, spellInfo)
+            end
         end
     end
     return filtered
@@ -832,7 +899,20 @@ function ModernSpellBookFrame:FilterSpells(filterString)
             local isMatch = true
             for _, keyword in ipairs(keywords) do
                 local knownSpell = ModernSpellBook_DB.knownSpells[lookupString]
-                if (knownSpell ~= nil and not string.find(knownSpell, keyword)) then
+                if knownSpell then
+                    -- Learned spell: search in lookup table
+                    if not string.find(knownSpell, keyword) then
+                        isMatch = false
+                        break
+                    end
+                elseif spellInfo.isUnlearned then
+                    -- Unlearned spell: search by name, rank, category
+                    local searchStr = string.lower(spellInfo.spellName .. ";" .. (spellInfo.spellRank or "") .. ";" .. (spellInfo.category or ""))
+                    if not string.find(searchStr, keyword) then
+                        isMatch = false
+                        break
+                    end
+                else
                     isMatch = false
                     break
                 end
@@ -1153,6 +1233,8 @@ function ModernSpellBookFrame:GetPlayerSpells(showGeneralTab)
                 end
             end
         end
+        -- Merge unlearned spells from trainer data
+        ModernSpellBookFrame:MergeUnlearnedSpells(allSpellsDict, true)
         -- Filter to highest ranks only if checkbox is unchecked
         if not ShowAllSpellRanksCheckbox or not ShowAllSpellRanksCheckbox:GetChecked() then
             for tabName, spells in pairs(allSpellsDict) do
@@ -1216,6 +1298,9 @@ function ModernSpellBookFrame:GetPlayerSpells(showGeneralTab)
         end
     end
 
+    -- Merge unlearned spells from trainer data
+    ModernSpellBookFrame:MergeUnlearnedSpells(allSpellsDict, false)
+
     -- Filter to highest ranks only if checkbox is unchecked
     if not ShowAllSpellRanksCheckbox or not ShowAllSpellRanksCheckbox:GetChecked() then
         for tabName, spells in pairs(allSpellsDict) do
@@ -1226,6 +1311,48 @@ function ModernSpellBookFrame:GetPlayerSpells(showGeneralTab)
     return allSpellsDict
 end
 
+
+-- Merge unlearned spells from trainer data into the spell dict
+function ModernSpellBookFrame:MergeUnlearnedSpells(allSpellsDict, showGeneralTab)
+    if not ModernSpellBook_DB.showUnlearned then return end
+    if not ModernSpellBookFrame.GetUnlearnedSpells then return end
+    local unlearned = ModernSpellBookFrame:GetUnlearnedSpells()
+    if not unlearned then return end
+
+    local canShowPassives = ShowPassiveSpellsCheckBox:GetChecked()
+
+    for category, spells in pairs(unlearned) do
+        -- Match category to existing tabs
+        local isGeneral = (category == GENERAL)
+        if showGeneralTab == isGeneral then
+            -- Try to find matching existing category
+            local targetCat = category
+            local found = false
+            for existingCat, _ in pairs(allSpellsDict) do
+                if existingCat == category then
+                    found = true
+                    break
+                end
+                -- Fuzzy match first 4 chars
+                if string.find(string.lower(existingCat), string.lower(string.sub(category, 1, 4))) then
+                    targetCat = existingCat
+                    found = true
+                    break
+                end
+            end
+
+            if not allSpellsDict[targetCat] then
+                allSpellsDict[targetCat] = {}
+            end
+
+            for _, spellInfo in ipairs(spells) do
+                if not spellInfo.isPassive or canShowPassives then
+                    table.insert(allSpellsDict[targetCat], spellInfo)
+                end
+            end
+        end
+    end
+end
 
 -- Create Turtle WoW custom tabs if they exist and haven't been created yet
 function ModernSpellBookFrame:CreateCustomTabs()
@@ -1319,6 +1446,22 @@ ModernSpellBookFrame:SetScript("OnShow", function()
 
     if spellUpdateRequired then
         ModernSpellBookFrame:DrawPage()
+    end
+
+    -- Show/hide trainer hint
+    if ModernSpellBookFrame.trainerHint then
+        local _, englishClass = UnitClass("player")
+        local spellCount = 0
+        if ModernSpellBook_DB.trainerSpells and ModernSpellBook_DB.trainerSpells[englishClass] then
+            for _ in pairs(ModernSpellBook_DB.trainerSpells[englishClass]) do
+                spellCount = spellCount + 1
+            end
+        end
+        if ModernSpellBook_DB.showUnlearned and spellCount < 50 then
+            ModernSpellBookFrame.trainerHint:Show()
+        else
+            ModernSpellBookFrame.trainerHint:Hide()
+        end
     end
 
     if not ModernSpellBookFrame.isFirstLoad then return end

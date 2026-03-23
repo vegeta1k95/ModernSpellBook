@@ -14,6 +14,7 @@ ModernSpellBook.lua
 ActionBar.lua
 SpellbookElements.lua
 Stances.lua
+TrainerData.lua
 Talents.lua
 Localization.lua
 Tabs.lua

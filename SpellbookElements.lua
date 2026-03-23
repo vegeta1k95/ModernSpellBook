@@ -33,8 +33,26 @@ function ModernSpellBookFrame:GetOrCreateCategory(i)
     categoryFrame = ModernSpellBookFrame["Category".. i]
     categoryFrame:SetWidth(450)
     categoryFrame:SetHeight(20)
+    -- Spec icon next to category name
+    categoryFrame.specIconFrame = CreateFrame("Frame", nil, categoryFrame)
+    categoryFrame.specIconFrame:SetWidth(22)
+    categoryFrame.specIconFrame:SetHeight(22)
+    categoryFrame.specIconFrame:SetPoint("TOPLEFT", categoryFrame, "TOPLEFT", 10, 1)
+    categoryFrame.specIconFrame:SetBackdrop({
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeSize = 8,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 }
+    })
+    categoryFrame.specIconFrame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+
+    categoryFrame.specIcon = categoryFrame.specIconFrame:CreateTexture(nil, "OVERLAY")
+    categoryFrame.specIcon:SetWidth(18)
+    categoryFrame.specIcon:SetHeight(18)
+    categoryFrame.specIcon:SetPoint("CENTER", categoryFrame.specIconFrame, "CENTER", 0, 0)
+    categoryFrame.specIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
     categoryFrame.text = categoryFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    categoryFrame.text:SetPoint("TOPLEFT", categoryFrame, "TOPLEFT", 10, 0)
+    categoryFrame.text:SetPoint("LEFT", categoryFrame.specIconFrame, "RIGHT", 5, 0)
     categoryFrame.text:SetTextColor(0, 0, 0)
     categoryFrame.text:SetShadowOffset(0, 0)
     categoryFrame.text:SetFont("Fonts\\FRIZQT__.TTF", 17)
@@ -56,6 +74,37 @@ function ModernSpellBookFrame:GetOrCreateCategory(i)
 
     function categoryFrame:Set(categoryName, currentPageRows, page)
         categoryFrame.text:SetText(categoryName)
+
+        -- Look up spec icon from talent tabs or spell tabs
+        local specIconFound = false
+        for t = 1, GetNumTalentTabs() do
+            local tabName, tabIcon = GetTalentTabInfo(t)
+            if tabName == categoryName then
+                categoryFrame.specIcon:SetTexture(tabIcon)
+                specIconFound = true
+                break
+            end
+        end
+        if not specIconFound then
+            -- Try spell tabs
+            local numTabs = GetNumSpellTabs and GetNumSpellTabs() or 4
+            for t = 1, numTabs do
+                local tabName, tabIcon = GetSpellTabInfo(t)
+                if tabName == categoryName and tabIcon then
+                    categoryFrame.specIcon:SetTexture(tabIcon)
+                    specIconFound = true
+                    break
+                end
+            end
+        end
+        if not specIconFound then
+            categoryFrame.specIconFrame:Hide()
+            categoryFrame.text:SetPoint("LEFT", categoryFrame.specIconFrame, "LEFT", 0, 0)
+        else
+            categoryFrame.specIconFrame:Show()
+            categoryFrame.text:SetPoint("LEFT", categoryFrame.specIconFrame, "RIGHT", 5, 0)
+        end
+
         categoryFrame:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", HORIZONTAL_OFFSET +SECOND_PAGE_OFFSET*(page -1), -80 +currentPageRows *-VERTICAL_SPACING -5)
         categoryFrame:Show()
     end
@@ -226,6 +275,7 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
     function spellFrame:Set(spellInfo, currentPageRows, page, grid_x)
         -- Set up click handler for casting (replaces SetAttribute-based casting)
         spellFrame:SetScript("OnClick", function()
+            if spellInfo.isUnlearned then return end
             if spellInfo.isPassive then return end
             if InCombatLockdown() then return end
 
@@ -254,7 +304,16 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
 
         spellFrame.icon:SetTexture(spellInfo.spellIcon)
         spellFrame.text:SetText(spellInfo.spellName)
-        spellFrame.subText:SetText(spellInfo.spellRank)
+        if spellInfo.isUnlearned and spellInfo.levelReq and spellInfo.levelReq > 0 then
+            local rankText = spellInfo.spellRank or ""
+            if rankText ~= "" then
+                spellFrame.subText:SetText(rankText .. " (Lvl " .. spellInfo.levelReq .. ")")
+            else
+                spellFrame.subText:SetText("Lvl " .. spellInfo.levelReq)
+            end
+        else
+            spellFrame.subText:SetText(spellInfo.spellRank)
+        end
         spellFrame.spellID = spellInfo.spellID
         spellFrame.bookType = spellInfo.bookType
 
@@ -275,7 +334,9 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
             nameHeight = spellFrame.text:GetHeight()
         end
         local subHeight = 0
-        if spellInfo.spellRank and spellInfo.spellRank ~= "" then
+        local hasSubText = (spellInfo.spellRank and spellInfo.spellRank ~= "")
+            or (spellInfo.isUnlearned and spellInfo.levelReq and spellInfo.levelReq > 0)
+        if hasSubText then
             subHeight = 11 -- subText line height + gap
         end
         local totalHeight = nameHeight + subHeight
@@ -335,7 +396,35 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
             spellFrame.newGlow:Hide()
 
             GameTooltip:SetOwner(spellFrame, "ANCHOR_RIGHT")
-            if not spellInfo.isTalent then
+            if spellInfo.isUnlearned then
+                -- Talents can show full tooltip via SetTalent
+                local shownFullTooltip = false
+                if spellInfo.isTalent and spellInfo.talentGrid and GameTooltip.SetTalent then
+                    pcall(function()
+                        GameTooltip:SetTalent(spellInfo.talentGrid[1], spellInfo.talentGrid[2])
+                        shownFullTooltip = true
+                    end)
+                end
+                if not shownFullTooltip then
+                    local rankText = spellInfo.spellRank or ""
+                    if rankText ~= "" then
+                        GameTooltip:SetText(spellInfo.spellName .. " - " .. rankText, 1, 1, 1)
+                    else
+                        GameTooltip:SetText(spellInfo.spellName, 1, 1, 1)
+                    end
+                    if spellInfo.description then
+                        GameTooltip:AddLine(spellInfo.description, 1, 0.82, 0, true)
+                    end
+                end
+                if spellInfo.levelReq and spellInfo.levelReq > 0 then
+                    GameTooltip:AddLine("Requires Level " .. spellInfo.levelReq, 1, 0.2, 0.2)
+                end
+                if spellInfo.isTalent then
+                    GameTooltip:AddLine("Requires talent point.", 1, 0.82, 0)
+                else
+                    GameTooltip:AddLine("Visit a class trainer to learn.", 1, 0.82, 0)
+                end
+            elseif not spellInfo.isTalent then
                 -- In vanilla, use SetSpell with spellbook slot and bookType
                 if spellInfo.bookType then
                     GameTooltip:SetSpell(spellInfo.spellID, spellInfo.bookType)
@@ -397,7 +486,9 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
             local showFrame = true
             if ModernSpellBook_DB and ModernSpellBook_DB.iconFrame then
                 local isOtherTab = ModernSpellBookFrame.selectedTab and ModernSpellBookFrame.selectedTab > 2
-                if spellInfo.isPassive then
+                if spellInfo.isUnlearned then
+                    showFrame = ModernSpellBook_DB.iconFrame.unlearned
+                elseif spellInfo.isPassive then
                     showFrame = ModernSpellBook_DB.iconFrame.passives
                 elseif isOtherTab then
                     showFrame = ModernSpellBook_DB.iconFrame.other
@@ -446,6 +537,73 @@ function ModernSpellBookFrame:GetOrCreateSpellFrame(i)
             spellFrame.checkedGlow.checkedAlpha = 0.5
         end
         spellFrame.icon.isPassive = spellInfo.isPassive
+
+        if spellInfo.isUnlearned then
+            -- Desaturate unlearned spells
+            if spellFrame.icon.SetDesaturated then
+                spellFrame.icon:SetDesaturated(true)
+            else
+                spellFrame.icon:SetVertexColor(0.4, 0.4, 0.4)
+            end
+            spellFrame.icon:SetAlpha(0.5)
+            -- Desaturate the current text color mode
+            local isDark = ModernSpellBook_DB and ModernSpellBook_DB.textColorMode == "dark"
+            if isDark then
+                spellFrame.text:SetTextColor(0.4, 0.4, 0.4)
+                spellFrame.subText:SetTextColor(0.4, 0.4, 0.4)
+            else
+                -- Desaturate the gold/white by averaging towards grey
+                spellFrame.text:SetTextColor(0.6, 0.55, 0.35)
+                spellFrame.subText:SetTextColor(0.6, 0.6, 0.6)
+            end
+            if not isDark then
+                spellFrame.text:SetShadowOffset(1, -1)
+                spellFrame.text:SetShadowColor(0, 0, 0, 0.7)
+                spellFrame.subText:SetShadowOffset(1, -1)
+                spellFrame.subText:SetShadowColor(0, 0, 0, 0.7)
+            end
+            if spellFrame.fancyFrame then
+                local showUnlearnedFrame = ModernSpellBook_DB and ModernSpellBook_DB.iconFrame and ModernSpellBook_DB.iconFrame.unlearned
+                if not showUnlearnedFrame then
+                    spellFrame.fancyFrame:Hide()
+                else
+                    if spellFrame.border and spellFrame.border.SetDesaturated then
+                        spellFrame.border:SetDesaturated(true)
+                    end
+                    spellFrame.border:SetAlpha(0.5)
+                end
+            end
+            spellFrame.tile:SetAlpha(0.5)
+            spellFrame.checkedGlow.checkedAlpha = 0
+            spellFrame:SetMovable(false)
+            spellFrame:SetScript("OnDragStart", nil)
+            spellFrame:SetScript("OnUpdate", nil)
+        else
+            -- Reset for learned spells (in case frame was reused from unlearned)
+            if spellFrame.icon.SetDesaturated then
+                spellFrame.icon:SetDesaturated(false)
+            end
+            if spellFrame.border and spellFrame.border.SetDesaturated then
+                spellFrame.border:SetDesaturated(false)
+            end
+            if spellFrame.border then spellFrame.border:SetAlpha(1) end
+            spellFrame.icon:SetAlpha(1)
+            spellFrame.tile:SetAlpha(1)
+            local isDark = ModernSpellBook_DB and ModernSpellBook_DB.textColorMode == "dark"
+            if isDark then
+                spellFrame.text:SetTextColor(0, 0, 0)
+                spellFrame.subText:SetTextColor(0, 0, 0)
+                spellFrame.text:SetShadowOffset(0, 0)
+                spellFrame.subText:SetShadowOffset(0, 0)
+            else
+                spellFrame.text:SetTextColor(0.989, 0.857, 0.343)
+                spellFrame.subText:SetTextColor(1, 1, 1)
+                spellFrame.text:SetShadowOffset(1, -1)
+                spellFrame.text:SetShadowColor(0, 0, 0, 0.7)
+                spellFrame.subText:SetShadowOffset(1, -1)
+                spellFrame.subText:SetShadowColor(0, 0, 0, 0.7)
+            end
+        end
     end
 
     return spellFrame
