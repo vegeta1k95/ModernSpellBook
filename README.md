@@ -32,7 +32,7 @@ A modern, retail-inspired spellbook replacement for **Turtle WoW** (1.12.1 vanil
 ### General & Professions
 ![General & Professions](screenshots/screenshot2.png)
 
-### Unlearned Spells, Talents & Badges
+### Black theme (optional)
 ![Unlearned Spells](screenshots/screenshot3.png)
 
 ## Installation
