@@ -372,12 +372,25 @@ class "CSpellDataService"
 		end
 
 		-- Merge talents with spells
+		-- Collect existing category keys first to avoid modifying tables during iteration
+		local existingCategories = {}
+		for cat, _ in pairs(allSpellsDict) do
+			table.insert(existingCategories, cat)
+		end
+
 		local talentGridPositions = TalentService:GetAllTalents(true)
-		for talentGroupName, talents in pairs(talentGridPositions) do
+		-- Collect talent keys to avoid pairs iteration issues
+		local talentKeys = {}
+		for k, _ in pairs(talentGridPositions) do
+			table.insert(talentKeys, k)
+		end
+		for _, origTalentGroupName in ipairs(talentKeys) do
+			local talents = talentGridPositions[origTalentGroupName]
+			local talentGroupName = origTalentGroupName
 			-- Try to match talent tab name to an existing spell category (fuzzy match)
 			if (allSpellsDict[talentGroupName] == nil) then
 				local matched = false
-				for knownGroup, _ in pairs(allSpellsDict) do
+				for _, knownGroup in ipairs(existingCategories) do
 					if (string.find(string.lower(knownGroup), string.lower(string.sub(talentGroupName, 1, 4)))) then
 						talentGroupName = knownGroup
 						for _, spellInfo in ipairs(talents) do
@@ -389,6 +402,7 @@ class "CSpellDataService"
 				end
 				if (not matched) then
 					allSpellsDict[talentGroupName] = {}
+					table.insert(existingCategories, talentGroupName)
 				end
 			end
 			if (passiveSpellsDict[talentGroupName] == nil) then
