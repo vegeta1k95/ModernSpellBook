@@ -26,41 +26,40 @@ class "CSpellBook"
 	__init = function(self)
 		-- Create the main frame
 		self.frame = CreateFrame("Frame", "ModernSpellBookFrame", SpellBookFrame)
-		_G.ModernSpellBookFrame = self.frame
-
-		local f = self.frame
-		f:SetBackdrop({
+		self.frame:SetBackdrop({
 			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
 			tile = true, tileSize = 32, edgeSize = 32,
 			insets = { left = 8, right = 8, top = 8, bottom = 8 }
 		})
-		f:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
-		f.CloseButton = CreateFrame("Button", nil, f, "UIPanelCloseButton")
-		f.CloseButton:SetPoint("TOPRIGHT", f, "TOPRIGHT", -2, -2)
+		self.frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
+		self.frame.CloseButton = CreateFrame("Button", nil, self.frame, "UIPanelCloseButton")
+		self.frame.CloseButton:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -2, -2)
 
 		-- Event dispatch (vanilla calling convention)
 		local spellBook = self
-		f.Tabgroups = {}
+		self.frame.Tabgroups = {}
 
-		f.ADDON_LOADED = function()
+		self.frame.ADDON_LOADED = function()
 			spellBook:OnAddonLoaded()
 		end
-		f.SPELLS_CHANGED = function()
+		self.frame.SPELLS_CHANGED = function()
 			spellBook:OnSpellsChanged()
 		end
 
-		f:RegisterEvent("ADDON_LOADED")
-		f:RegisterEvent("SPELLS_CHANGED")
-		f:SetScript("OnEvent", function()
-			local handler = ModernSpellBookFrame[event]
+		self.frame:RegisterEvent("ADDON_LOADED")
+		self.frame:RegisterEvent("SPELLS_CHANGED")
+		self.frame:SetScript("OnEvent", function()
+			local handler = self.frame[event]
 			if (handler) then handler() end
 		end)
 
 		-- OnShow
-		f:SetScript("OnShow", function()
+		self.frame:SetScript("OnShow", function()
 			spellBook:OnShow()
 		end)
+
+        _G.ModernSpellBookFrame = self.frame
 	end;
 
 	-- ========================= EVENTS ============================
@@ -86,12 +85,12 @@ class "CSpellBook"
 		end
 		self:AlterOlderSavedVariables()
 
-		ModernSpellBookFrame.ClientLocale = Localization.current
-		ModernSpellBookFrame.currentPage = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastPage or 1
-		ModernSpellBookFrame.maxPages = 1
-		ModernSpellBookFrame.stanceButtons = {}
-		ModernSpellBookFrame.unlockedStances = {}
-		ModernSpellBookFrame.isFirstLoad = true
+		self.frame.ClientLocale = Localization.current
+		self.frame.currentPage = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastPage or 1
+		self.frame.maxPages = 1
+		self.frame.stanceButtons = {}
+		self.frame.unlockedStances = {}
+		self.frame.isFirstLoad = true
 
 		self:SetupFrame()
 		self:AddPassiveCheckBox()
@@ -99,8 +98,8 @@ class "CSpellBook"
 		self:AddPageButtons()
 		self:AddCancelButton()
 
-		ModernSpellBookFrame.settingsMenu = CSettingsMenu(
-			ModernSpellBookFrame,
+		self.frame.settingsMenu = CSettingsMenu(
+			self.frame,
 			function() SpellBook:DrawPage() end
 		)
 
@@ -108,15 +107,15 @@ class "CSpellBook"
 		self:DisableVanillaSpellBook()
 		self:ForceLoad()
 
-		ModernSpellBookFrame:UnregisterEvent("ADDON_LOADED")
+		self.frame:UnregisterEvent("ADDON_LOADED")
 	end;
 
 	OnSpellsChanged = function(self)
-		if (ModernSpellBookFrame.isFirstLoad) then return end
+		if (self.frame.isFirstLoad) then return end
 
-		if (ModernSpellBookFrame:IsVisible()) then
+		if (self.frame:IsVisible()) then
 			C_Timer.After(0.3, function()
-				ModernSpellBookFrame.tab3:UpdateAsPetTab()
+				self.frame.tab3:UpdateAsPetTab()
 				SpellBook:DrawPage()
 			end)
 		else
@@ -128,23 +127,23 @@ class "CSpellBook"
 		PlaySound(SOUNDKIT.IG_SPELLBOOK_OPEN)
 		ActionBarHelper:ShowAllGrids()
 
-		if (ModernSpellBookFrame.isFirstLoad) then
+		if (self.frame.isFirstLoad) then
 			self:AddAllRanksCheckBox()
 			local className = UnitClass("player")
 
-			local wasSearchBarShown = ModernSpellBookFrame.searchBar:IsShown()
-			ModernSpellBookFrame.searchBar:Hide()
-			ModernSpellBookFrame.searchBar:SetPoint("RIGHT", self:GetRightmostLeftButton(), "LEFT", -10, 1)
-			if (wasSearchBarShown) then ModernSpellBookFrame.searchBar:Show() end
+			local wasSearchBarShown = self.frame.searchBar:IsShown()
+			self.frame.searchBar:Hide()
+			self.frame.searchBar:SetPoint("RIGHT", self:GetRightmostLeftButton(), "LEFT", -10, 1)
+			if (wasSearchBarShown) then self.frame.searchBar:Show() end
 
-			ModernSpellBookFrame.selectedTab = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastTab or 1
-			ModernSpellBookFrame.tab1 = self:NewTab(className)
-			ModernSpellBookFrame.tab2 = self:NewTab(GENERAL)
-			ModernSpellBookFrame.tab3 = self:NewTab("Pet")
+			self.frame.selectedTab = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastTab or 1
+			self.frame.tab1 = self:NewTab(className)
+			self.frame.tab2 = self:NewTab(GENERAL)
+			self.frame.tab3 = self:NewTab("Pet")
 
-			ModernSpellBookFrame.customTabs = {}
+			self.frame.customTabs = {}
 
-			ModernSpellBookFrame.tab3:UpdateAsPetTab()
+			self.frame.tab3:UpdateAsPetTab()
 			self:SetShape(ModernSpellBook_DB.isMinimized)
 			self:PositionAllTabs()
 
@@ -154,25 +153,25 @@ class "CSpellBook"
 
 			-- Restore last selected tab
 			local lastTab = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastTab or 1
-			if (lastTab > 1 and ModernSpellBookFrame.Tabgroups[lastTab]) then
-				ModernSpellBookFrame.Tabgroups[lastTab].frame:Click()
+			if (lastTab > 1 and self.frame.Tabgroups[lastTab]) then
+				self.frame.Tabgroups[lastTab].frame:Click()
 			end
 		else
-			ModernSpellBookFrame.tab3:UpdateAsPetTab()
+			self.frame.tab3:UpdateAsPetTab()
 		end
 
 		self:CreateCustomTabs()
 
 		-- Reset to page 1 / tab 1 if "Remember page" is off
 		if (not ModernSpellBook_DB.rememberPage) then
-			ModernSpellBookFrame.currentPage = 1
-			if (ModernSpellBookFrame.selectedTab ~= 1 and ModernSpellBookFrame.Tabgroups[1]) then
-				ModernSpellBookFrame.selectedTab = 1
-				for _, tab in ipairs(ModernSpellBookFrame.Tabgroups) do
+			self.frame.currentPage = 1
+			if (self.frame.selectedTab ~= 1 and self.frame.Tabgroups[1]) then
+				self.frame.selectedTab = 1
+				for _, tab in ipairs(self.frame.Tabgroups) do
 					tab:SetDeselected()
 				end
-				ModernSpellBookFrame.Tabgroups[1]:SetSelected()
-				ModernSpellBookFrame.Tabgroups[1]:SetDefaultFontColor()
+				self.frame.Tabgroups[1]:SetSelected()
+				self.frame.Tabgroups[1]:SetDefaultFontColor()
 			end
 			spellUpdateRequired = true
 		end
@@ -182,7 +181,7 @@ class "CSpellBook"
 		end
 
 		-- Show/hide trainer hint
-		if (ModernSpellBookFrame.trainerHint) then
+		if (self.frame.trainerHint) then
 			local _, englishClass = UnitClass("player")
 			local spellCount = 0
 			if (ModernSpellBook_DB.trainerSpells and ModernSpellBook_DB.trainerSpells[englishClass]) then
@@ -191,14 +190,14 @@ class "CSpellBook"
 				end
 			end
 			if (ModernSpellBook_DB.showUnlearned and spellCount < 50) then
-				ModernSpellBookFrame.trainerHint:Show()
+				self.frame.trainerHint:Show()
 			else
-				ModernSpellBookFrame.trainerHint:Hide()
+				self.frame.trainerHint:Hide()
 			end
 		end
 
-		if (not ModernSpellBookFrame.isFirstLoad) then return end
-		ModernSpellBookFrame.isFirstLoad = false
+		if (not self.frame.isFirstLoad) then return end
+		self.frame.isFirstLoad = false
 
 		if (ShowAllSpellRanksCheckbox and ShowAllSpellRanksCheckbox.HookScript) then
 			HookScript(ShowAllSpellRanksCheckbox, "OnClick", function()
@@ -210,14 +209,14 @@ class "CSpellBook"
 	-- ========================= SETUP =============================
 
 	ForceLoad = function(self)
-		ModernSpellBookFrame.isForceLoading = true
+		self.frame.isForceLoading = true
 		ToggleSpellBook(BOOKTYPE_SPELL)
 		ToggleSpellBook(BOOKTYPE_SPELL)
 		C_Timer.After(0.5, function()
 			if (SpellBookFrame:IsShown()) then
 				ToggleSpellBook(BOOKTYPE_SPELL)
 			end
-			ModernSpellBookFrame.isForceLoading = false
+			self.frame.isForceLoading = false
 		end)
 	end;
 
@@ -230,109 +229,109 @@ class "CSpellBook"
 	end;
 
 	AddSearchBar = function(self)
-		ModernSpellBookFrame.searchBar = CSearchBar(
-			ModernSpellBookFrame,
-			ModernSpellBookFrame.ClientLocale.SearchAbilities,
+		self.frame.searchBar = CSearchBar(
+			self.frame,
+			self.frame.ClientLocale.SearchAbilities,
 			function() SpellBook:RefreshPage() end
 		)
 	end;
 
 	SetupFrame = function(self)
 		local classID = MSB_GetClassIndex()
-		ModernSpellBookFrame:EnableMouse(true)
-		ModernSpellBookFrame:SetMovable(true)
-		ModernSpellBookFrame:RegisterForDrag("LeftButton")
-		ModernSpellBookFrame:SetScript("OnDragStart", function()
+		self.frame:EnableMouse(true)
+		self.frame:SetMovable(true)
+		self.frame:RegisterForDrag("LeftButton")
+		self.frame:SetScript("OnDragStart", function()
 			this:StartMoving()
 		end)
-		ModernSpellBookFrame:SetScript("OnDragStop", function()
+		self.frame:SetScript("OnDragStop", function()
 			this:StopMovingOrSizing()
 			-- Save position
 			local point, _, relPoint, x, y = this:GetPoint()
 			ModernSpellBook_DB.position = { point = point, relPoint = relPoint, x = x, y = y }
 		end)
-		ModernSpellBookFrame:SetWidth(windowSettings.width2)
-		ModernSpellBookFrame:SetHeight(windowSettings.height)
+		self.frame:SetWidth(windowSettings.width2)
+		self.frame:SetHeight(windowSettings.height)
 
 		-- Restore saved position or default to center
 		if (ModernSpellBook_DB.position) then
 			local pos = ModernSpellBook_DB.position
-			ModernSpellBookFrame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+			self.frame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
 		else
-			ModernSpellBookFrame:SetPoint("CENTER", UIParent, "CENTER", 0, windowSettings.posy)
+			self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, windowSettings.posy)
 		end
-		ModernSpellBookFrame:SetFrameStrata("HIGH")
-		HideUIPanel(ModernSpellBookFrame)
+		self.frame:SetFrameStrata("HIGH")
+		HideUIPanel(self.frame)
 
-		ModernSpellBookFrame.title = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.title:SetPoint("TOP", ModernSpellBookFrame, "TOP", 0, -24)
-		ModernSpellBookFrame.title:SetText(SPELLBOOK)
+		self.frame.title = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		self.frame.title:SetPoint("TOP", self.frame, "TOP", 0, -24)
+		self.frame.title:SetText(SPELLBOOK)
 
 		-- Portrait frame
-		ModernSpellBookFrame.portraitBg = ModernSpellBookFrame:CreateTexture(nil, "ARTWORK")
-		ModernSpellBookFrame.portraitBg:SetWidth(44)
-		ModernSpellBookFrame.portraitBg:SetHeight(44)
-		ModernSpellBookFrame.portraitBg:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", -10, 10)
-		ModernSpellBookFrame.portraitBg:SetTexture(0, 0, 0, 1)
+		self.frame.portraitBg = self.frame:CreateTexture(nil, "ARTWORK")
+		self.frame.portraitBg:SetWidth(44)
+		self.frame.portraitBg:SetHeight(44)
+		self.frame.portraitBg:SetPoint("TOPLEFT", self.frame, "TOPLEFT", -10, 10)
+		self.frame.portraitBg:SetTexture(0, 0, 0, 1)
 
-		ModernSpellBookFrame.book = ModernSpellBookFrame:CreateTexture(nil, "OVERLAY")
-		ModernSpellBookFrame.book:SetWidth(40)
-		ModernSpellBookFrame.book:SetHeight(40)
-		ModernSpellBookFrame.book:SetPoint("CENTER", ModernSpellBookFrame.portraitBg, "CENTER", 0, 0)
-		ModernSpellBookFrame.book:SetTexture("Interface\\Spellbook\\Spellbook-Icon")
-		ModernSpellBookFrame.book:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		self.frame.book = self.frame:CreateTexture(nil, "OVERLAY")
+		self.frame.book:SetWidth(40)
+		self.frame.book:SetHeight(40)
+		self.frame.book:SetPoint("CENTER", self.frame.portraitBg, "CENTER", 0, 0)
+		self.frame.book:SetTexture("Interface\\Spellbook\\Spellbook-Icon")
+		self.frame.book:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-		ModernSpellBookFrame.portraitBorderFrame = CreateFrame("Frame", nil, ModernSpellBookFrame)
-		ModernSpellBookFrame.portraitBorderFrame:SetWidth(76)
-		ModernSpellBookFrame.portraitBorderFrame:SetHeight(76)
-		ModernSpellBookFrame.portraitBorderFrame:SetPoint("CENTER", ModernSpellBookFrame.portraitBg, "CENTER", 0, 0)
-		ModernSpellBookFrame.portraitBorderFrame:SetFrameLevel(ModernSpellBookFrame:GetFrameLevel() + 5)
-		ModernSpellBookFrame.portraitBorder = ModernSpellBookFrame.portraitBorderFrame:CreateTexture(nil, "OVERLAY")
-		ModernSpellBookFrame.portraitBorder:SetAllPoints(ModernSpellBookFrame.portraitBorderFrame)
-		ModernSpellBookFrame.portraitBorder:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-frame")
+		self.frame.portraitBorderFrame = CreateFrame("Frame", nil, self.frame)
+		self.frame.portraitBorderFrame:SetWidth(76)
+		self.frame.portraitBorderFrame:SetHeight(76)
+		self.frame.portraitBorderFrame:SetPoint("CENTER", self.frame.portraitBg, "CENTER", 0, 0)
+		self.frame.portraitBorderFrame:SetFrameLevel(self.frame:GetFrameLevel() + 5)
+		self.frame.portraitBorder = self.frame.portraitBorderFrame:CreateTexture(nil, "OVERLAY")
+		self.frame.portraitBorder:SetAllPoints(self.frame.portraitBorderFrame)
+		self.frame.portraitBorder:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-frame")
 
 		-- Background pages (top anchor positions, bottom anchor = frame bottom, height auto)
-		ModernSpellBookFrame.backgroundLeft = ModernSpellBookFrame:CreateTexture(nil, "ARTWORK")
-		ModernSpellBookFrame.backgroundLeft:SetWidth(550)
-		ModernSpellBookFrame.backgroundLeft:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 15, -50)
-		ModernSpellBookFrame.backgroundLeft:SetPoint("BOTTOMLEFT", ModernSpellBookFrame, "BOTTOMLEFT", 0, 15)
-		ModernSpellBookFrame.backgroundLeft:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-1")
-		ModernSpellBookFrame.backgroundLeft:SetTexCoord(1, 0, 0, 1)
+		self.frame.backgroundLeft = self.frame:CreateTexture(nil, "ARTWORK")
+		self.frame.backgroundLeft:SetWidth(550)
+		self.frame.backgroundLeft:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 15, -50)
+		self.frame.backgroundLeft:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", 0, 15)
+		self.frame.backgroundLeft:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-1")
+		self.frame.backgroundLeft:SetTexCoord(1, 0, 0, 1)
 
-		ModernSpellBookFrame.backgroundRight = ModernSpellBookFrame:CreateTexture(nil, "ARTWORK")
-		ModernSpellBookFrame.backgroundRight:SetWidth(510)
-		ModernSpellBookFrame.backgroundRight:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 535, -50)
-		ModernSpellBookFrame.backgroundRight:SetPoint("BOTTOMRIGHT", ModernSpellBookFrame, "BOTTOMRIGHT", -15, 15)
-		ModernSpellBookFrame.backgroundRight:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-1")
-		ModernSpellBookFrame.backgroundRight:SetTexCoord(0.123, 1, 0, 1)
+		self.frame.backgroundRight = self.frame:CreateTexture(nil, "ARTWORK")
+		self.frame.backgroundRight:SetWidth(510)
+		self.frame.backgroundRight:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 535, -50)
+		self.frame.backgroundRight:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -15, 15)
+		self.frame.backgroundRight:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-1")
+		self.frame.backgroundRight:SetTexCoord(0.123, 1, 0, 1)
 
 		-- Bookmark
-		ModernSpellBookFrame.bookmark = ModernSpellBookFrame:CreateTexture(nil, "OVERLAY")
-		ModernSpellBookFrame.bookmark:SetWidth(64)
-		ModernSpellBookFrame.bookmark:SetHeight(256)
-		ModernSpellBookFrame.bookmark:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", windowSettings.width1-65, -53)
-		ModernSpellBookFrame.bookmark:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\bookmark")
-		ModernSpellBookFrame.bookmark:SetTexCoord(1, 0, 0, 1)
+		self.frame.bookmark = self.frame:CreateTexture(nil, "OVERLAY")
+		self.frame.bookmark:SetWidth(64)
+		self.frame.bookmark:SetHeight(256)
+		self.frame.bookmark:SetPoint("TOPLEFT", self.frame, "TOPLEFT", windowSettings.width1-65, -53)
+		self.frame.bookmark:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\bookmark")
+		self.frame.bookmark:SetTexCoord(1, 0, 0, 1)
 		classColors = nil
 
-		ModernSpellBookFrame.noresultsText = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.noresultsText:SetPoint("CENTER", ModernSpellBookFrame.backgroundLeft, "CENTER", 0, 0)
-		ModernSpellBookFrame.noresultsText:SetText(ModernSpellBookFrame.ClientLocale.NoResults.. NEW.. ", ".. TALENT.. "'")
-		ModernSpellBookFrame.noresultsText:SetTextColor(0, 0, 0)
-		ModernSpellBookFrame.noresultsText:SetShadowOffset(0, 0)
-		ModernSpellBookFrame.noresultsText:Hide()
+		self.frame.noresultsText = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		self.frame.noresultsText:SetPoint("CENTER", self.frame.backgroundLeft, "CENTER", 0, 0)
+		self.frame.noresultsText:SetText(self.frame.ClientLocale.NoResults.. NEW.. ", ".. TALENT.. "'")
+		self.frame.noresultsText:SetTextColor(0, 0, 0)
+		self.frame.noresultsText:SetShadowOffset(0, 0)
+		self.frame.noresultsText:Hide()
 
-		ModernSpellBookFrame.trainerHint = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.trainerHint:SetPoint("BOTTOM", ModernSpellBookFrame, "BOTTOM", 0, 60)
-		ModernSpellBookFrame.trainerHint:SetText("Visit a class trainer in a major city to fetch the FULL list of available spells.")
-		ModernSpellBookFrame.trainerHint:SetFont("Fonts\\FRIZQT__.TTF", 10)
-		ModernSpellBookFrame.trainerHint:SetTextColor(1, 1, 1)
-		ModernSpellBookFrame.trainerHint:Hide()
+		self.frame.trainerHint = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		self.frame.trainerHint:SetPoint("BOTTOM", self.frame, "BOTTOM", 0, 60)
+		self.frame.trainerHint:SetText("Visit a class trainer in a major city to fetch the FULL list of available spells.")
+		self.frame.trainerHint:SetFont("Fonts\\FRIZQT__.TTF", 10)
+		self.frame.trainerHint:SetTextColor(1, 1, 1)
+		self.frame.trainerHint:Hide()
 
-		ModernSpellBookFrame.spellCounter = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.spellCounter:SetPoint("BOTTOMLEFT", ModernSpellBookFrame, "BOTTOMLEFT", 60, 60)
-		ModernSpellBookFrame.spellCounter:SetFont("Fonts\\FRIZQT__.TTF", 10)
-		ModernSpellBookFrame.spellCounter:SetTextColor(1, 1, 1)
+		self.frame.spellCounter = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		self.frame.spellCounter:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", 60, 60)
+		self.frame.spellCounter:SetFont("Fonts\\FRIZQT__.TTF", 10)
+		self.frame.spellCounter:SetTextColor(1, 1, 1)
 
 		if (SpellBookFrame.SetAttribute) then
 			SpellBookFrame:SetAttribute("UIPanelLayout-defined", true)
@@ -343,21 +342,21 @@ class "CSpellBook"
 	end;
 
 	AddPassiveCheckBox = function(self)
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox = CreateFrame("CheckButton", "ShowPassiveSpellsCheckBox", ModernSpellBookFrame, "UICheckButtonTemplate")
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox:SetWidth(20)
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox:SetHeight(20)
+		self.frame.ShowPassiveSpellsCheckBox = CreateFrame("CheckButton", "ShowPassiveSpellsCheckBox", self.frame, "UICheckButtonTemplate")
+		self.frame.ShowPassiveSpellsCheckBox:SetWidth(20)
+		self.frame.ShowPassiveSpellsCheckBox:SetHeight(20)
 
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox.text = ModernSpellBookFrame.ShowPassiveSpellsCheckBox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox.text:SetPoint("TOPLEFT", ModernSpellBookFrame.ShowPassiveSpellsCheckBox, "TOPLEFT", 20, -3.5)
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox.text:SetText(ModernSpellBookFrame.ClientLocale.ShowPassive)
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox.text:SetFont("Fonts\\FRIZQT__.TTF", 10)
+		self.frame.ShowPassiveSpellsCheckBox.text = self.frame.ShowPassiveSpellsCheckBox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		self.frame.ShowPassiveSpellsCheckBox.text:SetPoint("TOPLEFT", self.frame.ShowPassiveSpellsCheckBox, "TOPLEFT", 20, -3.5)
+		self.frame.ShowPassiveSpellsCheckBox.text:SetText(self.frame.ClientLocale.ShowPassive)
+		self.frame.ShowPassiveSpellsCheckBox.text:SetFont("Fonts\\FRIZQT__.TTF", 10)
 		local passiveTextWidth = 80
-		if (ModernSpellBookFrame.ShowPassiveSpellsCheckBox.text.GetStringWidth) then
-			passiveTextWidth = ModernSpellBookFrame.ShowPassiveSpellsCheckBox.text:GetStringWidth()
+		if (self.frame.ShowPassiveSpellsCheckBox.text.GetStringWidth) then
+			passiveTextWidth = self.frame.ShowPassiveSpellsCheckBox.text:GetStringWidth()
 		end
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox:SetPoint("TOPRIGHT", ModernSpellBookFrame, "TOPRIGHT", -passiveTextWidth -20, -28)
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox:SetChecked(ModernSpellBook_DB.showPassives)
-		ModernSpellBookFrame.ShowPassiveSpellsCheckBox:SetScript("OnClick", function()
+		self.frame.ShowPassiveSpellsCheckBox:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -passiveTextWidth -20, -28)
+		self.frame.ShowPassiveSpellsCheckBox:SetChecked(ModernSpellBook_DB.showPassives)
+		self.frame.ShowPassiveSpellsCheckBox:SetScript("OnClick", function()
 			PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 			ModernSpellBook_DB.showPassives = this:GetChecked()
 			SpellBook:DrawPage()
@@ -365,7 +364,7 @@ class "CSpellBook"
 	end;
 
 	AddAllRanksCheckBox = function(self)
-		ShowAllSpellRanksCheckbox = CreateFrame("CheckButton", "ShowAllSpellRanksCheckbox", ModernSpellBookFrame, "UICheckButtonTemplate")
+		ShowAllSpellRanksCheckbox = CreateFrame("CheckButton", "ShowAllSpellRanksCheckbox", self.frame, "UICheckButtonTemplate")
 		ShowAllSpellRanksCheckbox:SetWidth(20)
 		ShowAllSpellRanksCheckbox:SetHeight(20)
 		ShowAllSpellRanksCheckbox:SetChecked(ModernSpellBook_DB.showAllRanks or false)
@@ -379,7 +378,7 @@ class "CSpellBook"
 		if (ShowAllSpellRanksCheckboxText.GetStringWidth) then
 			labelWidth = ShowAllSpellRanksCheckboxText:GetStringWidth()
 		end
-		ShowAllSpellRanksCheckbox:SetPoint("TOPRIGHT", ModernSpellBookFrame.ShowPassiveSpellsCheckBox, "TOPLEFT", -labelWidth - 10, 0)
+		ShowAllSpellRanksCheckbox:SetPoint("TOPRIGHT", self.frame.ShowPassiveSpellsCheckBox, "TOPLEFT", -labelWidth - 10, 0)
 
 		ShowAllSpellRanksCheckbox:SetScript("OnClick", function()
 			PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -389,64 +388,64 @@ class "CSpellBook"
 	end;
 
 	AddPageButtons = function(self)
-		ModernSpellBookFrame.pageText = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.pageText:SetPoint("BOTTOMRIGHT", ModernSpellBookFrame, "BOTTOMRIGHT", -110, 60)
-		ModernSpellBookFrame.pageText:SetText("Page 1")
-		ModernSpellBookFrame.pageText:SetTextColor(1, 1, 1)
+		self.frame.pageText = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		self.frame.pageText:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -110, 60)
+		self.frame.pageText:SetText("Page 1")
+		self.frame.pageText:SetTextColor(1, 1, 1)
 
-		ModernSpellBookFrame.previousPage = CreateFrame("Button", nil, ModernSpellBookFrame)
-		ModernSpellBookFrame.previousPage:SetWidth(25)
-		ModernSpellBookFrame.previousPage:SetHeight(25)
-		ModernSpellBookFrame.previousPage:SetPoint("TOPLEFT", ModernSpellBookFrame.pageText, "TOPRIGHT", 10, 6.5)
-		ModernSpellBookFrame.previousPage:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up")
-		ModernSpellBookFrame.previousPage:SetHighlightTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
-		ModernSpellBookFrame.previousPage:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
-		ModernSpellBookFrame.previousPage:SetDisabledTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Disabled")
-		ModernSpellBookFrame.previousPage:Disable()
-		ModernSpellBookFrame.previousPage:SetScript("OnClick", function()
-			if (ModernSpellBookFrame.currentPage <= 1) then return end
+		self.frame.previousPage = CreateFrame("Button", nil, self.frame)
+		self.frame.previousPage:SetWidth(25)
+		self.frame.previousPage:SetHeight(25)
+		self.frame.previousPage:SetPoint("TOPLEFT", self.frame.pageText, "TOPRIGHT", 10, 6.5)
+		self.frame.previousPage:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up")
+		self.frame.previousPage:SetHighlightTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
+		self.frame.previousPage:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
+		self.frame.previousPage:SetDisabledTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Disabled")
+		self.frame.previousPage:Disable()
+		self.frame.previousPage:SetScript("OnClick", function()
+			if (self.frame.currentPage <= 1) then return end
 			PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN)
-			ModernSpellBookFrame.currentPage = math.max(1, ModernSpellBookFrame.currentPage -1)
-			ModernSpellBook_DB.lastPage = ModernSpellBookFrame.currentPage
+			self.frame.currentPage = math.max(1, self.frame.currentPage -1)
+			ModernSpellBook_DB.lastPage = self.frame.currentPage
 			SpellBook:RefreshPageElements()
 		end)
 
-		ModernSpellBookFrame.nextPage = CreateFrame("Button", nil, ModernSpellBookFrame)
-		ModernSpellBookFrame.nextPage:SetWidth(25)
-		ModernSpellBookFrame.nextPage:SetHeight(25)
-		ModernSpellBookFrame.nextPage:SetPoint("TOPLEFT", ModernSpellBookFrame.previousPage, "TOPLEFT", 24, 0)
-		ModernSpellBookFrame.nextPage:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up")
-		ModernSpellBookFrame.nextPage:SetHighlightTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
-		ModernSpellBookFrame.nextPage:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
-		ModernSpellBookFrame.nextPage:SetDisabledTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Disabled")
-		ModernSpellBookFrame.nextPage:SetScript("OnClick", function()
-			if (ModernSpellBookFrame.currentPage >= ModernSpellBookFrame.maxPages) then return end
+		self.frame.nextPage = CreateFrame("Button", nil, self.frame)
+		self.frame.nextPage:SetWidth(25)
+		self.frame.nextPage:SetHeight(25)
+		self.frame.nextPage:SetPoint("TOPLEFT", self.frame.previousPage, "TOPLEFT", 24, 0)
+		self.frame.nextPage:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up")
+		self.frame.nextPage:SetHighlightTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
+		self.frame.nextPage:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
+		self.frame.nextPage:SetDisabledTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Disabled")
+		self.frame.nextPage:SetScript("OnClick", function()
+			if (self.frame.currentPage >= self.frame.maxPages) then return end
 			PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN)
-			ModernSpellBookFrame.currentPage = math.min(ModernSpellBookFrame.currentPage +1, ModernSpellBookFrame.maxPages)
-			ModernSpellBook_DB.lastPage = ModernSpellBookFrame.currentPage
+			self.frame.currentPage = math.min(self.frame.currentPage +1, self.frame.maxPages)
+			ModernSpellBook_DB.lastPage = self.frame.currentPage
 			SpellBook:RefreshPageElements()
 		end)
 
 		local scrollDebounceTimer = 0
-		ModernSpellBookFrame:EnableMouseWheel(true)
-		ModernSpellBookFrame:SetScript("OnMouseWheel", function()
+		self.frame:EnableMouseWheel(true)
+		self.frame:SetScript("OnMouseWheel", function()
 			if (GetTime() - scrollDebounceTimer < 0.2) then return end
 			scrollDebounceTimer = GetTime()
 			local delta = arg1
 			if (delta > 0) then
-				ModernSpellBookFrame.previousPage:Click()
+				self.frame.previousPage:Click()
 			else
-				ModernSpellBookFrame.nextPage:Click()
+				self.frame.nextPage:Click()
 			end
 		end)
 	end;
 
 	AddCancelButton = function(self)
 		SpellBookCloseButton:ClearAllPoints()
-		SpellBookCloseButton:SetPoint("CENTER", ModernSpellBookFrame.CloseButton, "CENTER", 0, 0)
+		SpellBookCloseButton:SetPoint("CENTER", self.frame.CloseButton, "CENTER", 0, 0)
 		SpellBookCloseButton:SetFrameStrata("DIALOG")
-		ModernSpellBookFrame.CloseButton:Disable()
-		ModernSpellBookFrame.CloseButton:Hide()
+		self.frame.CloseButton:Disable()
+		self.frame.CloseButton:Hide()
 	end;
 
 	-- ========================= SHAPE =============================
@@ -470,10 +469,10 @@ class "CSpellBook"
 				titleText:SetText("What's Training")
 				WhatsTrainingFrame.wtbackgroundframe.TitleText = titleText
 
-				WhatsTrainingFrame.wtbutton = CreateFrame("Button", nil, ModernSpellBookFrame)
+				WhatsTrainingFrame.wtbutton = CreateFrame("Button", nil, self.frame)
 				WhatsTrainingFrame.wtbutton:SetWidth(28)
 				WhatsTrainingFrame.wtbutton:SetHeight(28)
-				WhatsTrainingFrame.wtbutton:SetPoint("BOTTOMRIGHT", ModernSpellBookFrame, "BOTTOMRIGHT", 28, 20)
+				WhatsTrainingFrame.wtbutton:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 28, 20)
 				WhatsTrainingFrame.wtbutton:SetNormalTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 				WhatsTrainingFrame.wtbutton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight")
 				WhatsTrainingFrame.wtbutton:SetScript("OnEnter", function()
@@ -495,7 +494,7 @@ class "CSpellBook"
 				WhatsTrainingFrame.wtbutton:SetScript("OnClick", function()
 					PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 					ToggleFrame(WhatsTrainingFrame)
-					HideUIPanel(ModernSpellBookFrame)
+					HideUIPanel(self.frame)
 
 					SpellBookCloseButton:ClearAllPoints()
 					if (WhatsTrainingFrame.wtbackgroundframe.CloseButton) then
@@ -505,10 +504,10 @@ class "CSpellBook"
 					end
 
 					SpellBookFrame:SetScript("OnShow", function()
-						ModernSpellBookFrame:Show()
+						self.frame:Show()
 						WhatsTrainingFrame:Hide()
 						SpellBookCloseButton:ClearAllPoints()
-						SpellBookCloseButton:SetPoint("CENTER", ModernSpellBookFrame.CloseButton, "CENTER", 0, 0)
+						SpellBookCloseButton:SetPoint("CENTER", self.frame.CloseButton, "CENTER", 0, 0)
 						SpellBookFrame:SetScript("OnShow", nil)
 					end)
 				end)
@@ -522,51 +521,51 @@ class "CSpellBook"
 
 		if (isMainFrameMinimized) then
 			maximumPages = 1
-			ModernSpellBookFrame:SetWidth(windowSettings.width1)
-			ModernSpellBookFrame:SetHeight(windowSettings.height)
+			self.frame:SetWidth(windowSettings.width1)
+			self.frame:SetHeight(windowSettings.height)
 			if (SpellBookFrame.SetAttribute) then
 				SpellBookFrame:SetAttribute("UIPanelLayout-area", "doublewide")
-				SpellBookFrame:SetAttribute("UIPanelLayout-width", ModernSpellBookFrame:GetWidth())
+				SpellBookFrame:SetAttribute("UIPanelLayout-width", self.frame:GetWidth())
 			end
 
 			if (ModernSpellBook_DB.position) then
 				local pos = ModernSpellBook_DB.position
-				ModernSpellBookFrame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+				self.frame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
 			else
-				ModernSpellBookFrame:SetPoint("LEFT", UIParent, "LEFT", 15, windowSettings.posy)
+				self.frame:SetPoint("LEFT", UIParent, "LEFT", 15, windowSettings.posy)
 			end
-			ModernSpellBookFrame.backgroundRight:Hide()
-			ModernSpellBookFrame.searchBar:Clear()
-			ModernSpellBookFrame.searchBar:Hide()
+			self.frame.backgroundRight:Hide()
+			self.frame.searchBar:Clear()
+			self.frame.searchBar:Hide()
 		else
 			maximumPages = 2
-			ModernSpellBookFrame:SetWidth(windowSettings.width2)
-			ModernSpellBookFrame:SetHeight(windowSettings.height)
+			self.frame:SetWidth(windowSettings.width2)
+			self.frame:SetHeight(windowSettings.height)
 			if (SpellBookFrame.SetAttribute) then
 				SpellBookFrame:SetAttribute("UIPanelLayout-area", "center")
-				SpellBookFrame:SetAttribute("UIPanelLayout-width", ModernSpellBookFrame:GetWidth())
+				SpellBookFrame:SetAttribute("UIPanelLayout-width", self.frame:GetWidth())
 			end
 
-			ModernSpellBookFrame:ClearAllPoints()
+			self.frame:ClearAllPoints()
 			if (ModernSpellBook_DB.position) then
 				local pos = ModernSpellBook_DB.position
-				ModernSpellBookFrame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+				self.frame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
 			else
-				ModernSpellBookFrame:SetPoint("CENTER", UIParent, "CENTER", 0, windowSettings.posy)
+				self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, windowSettings.posy)
 			end
 
-			ModernSpellBookFrame.backgroundRight:Show()
+			self.frame.backgroundRight:Show()
 
-			ModernSpellBookFrame.searchBar:Show()
+			self.frame.searchBar:Show()
 		end
 
 		if (SpellBookSpellIconsFrame and SpellBookSpellIconsFrame:IsShown()) then
 			SpellBookSpellIconsFrame:ClearAllPoints()
-			SpellBookSpellIconsFrame:SetPoint("CENTER", ModernSpellBookFrame, "CENTER", 0, 0)
+			SpellBookSpellIconsFrame:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
 			SpellBookSpellIconsFrame:Hide()
 		end
 
-		if (ModernSpellBookFrame.isFirstLoad) then return end
+		if (self.frame.isFirstLoad) then return end
 
 		ToggleSpellBook(BOOKTYPE_SPELL)
 		ToggleSpellBook(BOOKTYPE_SPELL)
@@ -642,30 +641,30 @@ class "CSpellBook"
 
 	RefreshPage = function(self)
 
-		local filterString = ModernSpellBookFrame.searchBar:GetText() or ""
+		local filterString = self.frame.searchBar:GetText() or ""
 		local filteredSpells = SpellDataService:FilterSpells(filterString)
 
 		if (next(filteredSpells) == nil) then
-			ModernSpellBookFrame.noresultsText:Show()
+			self.frame.noresultsText:Show()
 			self:CleanPages()
 			return
 		end
 
-		ModernSpellBookFrame.noresultsText:Hide()
-		ModernSpellBookFrame.pageCollection = self:CalculateSpellPositions(filteredSpells, ModernSpellBookFrame.isPetTab)
+		self.frame.noresultsText:Hide()
+		self.frame.pageCollection = self:CalculateSpellPositions(filteredSpells, self.frame.isPetTab)
 		self:RefreshPageElements()
 	end;
 
 	DrawPage = function(self)
 
 		spellUpdateRequired = false
-		ModernSpellBookFrame.stanceButtons = {}
+		self.frame.stanceButtons = {}
 
 		local AllSpells, isPetTab = SpellDataService:GetAvailableSpells()
-		ModernSpellBookFrame.AllSpells = AllSpells
-		ModernSpellBookFrame.isPetTab = isPetTab
+		self.frame.AllSpells = AllSpells
+		self.frame.isPetTab = isPetTab
 
-		if (ModernSpellBookFrame.isPetTab) then
+		if (self.frame.isPetTab) then
 			local totalSpells = 0
 			for cat, spellList in pairs(AllSpells) do
 				totalSpells = totalSpells + table.getn(spellList)
@@ -673,11 +672,11 @@ class "CSpellBook"
 
 			if (totalSpells == 0) then
 				self:CleanPages()
-				ModernSpellBookFrame.noresultsText:SetText(ModernSpellBookFrame.ClientLocale.NoPetSpells)
-				ModernSpellBookFrame.noresultsText:Show()
+				self.frame.noresultsText:SetText(self.frame.ClientLocale.NoPetSpells)
+				self.frame.noresultsText:Show()
 				return
 			else
-				ModernSpellBookFrame.noresultsText:Hide()
+				self.frame.noresultsText:Hide()
 			end
 		end
 
@@ -688,30 +687,30 @@ class "CSpellBook"
 	RefreshPageElements = function(self)
 		self:CleanPages()
 
-		local pageCollection = ModernSpellBookFrame.pageCollection
-		ModernSpellBookFrame.currentPage = math.min(ModernSpellBookFrame.currentPage, table.getn(pageCollection))
-		local currentPage = ModernSpellBookFrame.currentPage
-		ModernSpellBookFrame.maxPages = math.max(1, table.getn(pageCollection))
+		local pageCollection = self.frame.pageCollection
+		self.frame.currentPage = math.min(self.frame.currentPage, table.getn(pageCollection))
+		local currentPage = self.frame.currentPage
+		self.frame.maxPages = math.max(1, table.getn(pageCollection))
 
-		if (ModernSpellBookFrame.maxPages > 1) then
-			ModernSpellBookFrame.pageText:SetText(string.format(PRODUCT_CHOICE_PAGE_NUMBER, currentPage, ModernSpellBookFrame.maxPages))
-			ModernSpellBookFrame.pageText:Show()
-			ModernSpellBookFrame.nextPage:Show()
-			ModernSpellBookFrame.previousPage:Show()
+		if (self.frame.maxPages > 1) then
+			self.frame.pageText:SetText(string.format(PRODUCT_CHOICE_PAGE_NUMBER, currentPage, self.frame.maxPages))
+			self.frame.pageText:Show()
+			self.frame.nextPage:Show()
+			self.frame.previousPage:Show()
 		else
-			ModernSpellBookFrame.pageText:Hide()
-			ModernSpellBookFrame.nextPage:Hide()
-			ModernSpellBookFrame.previousPage:Hide()
+			self.frame.pageText:Hide()
+			self.frame.nextPage:Hide()
+			self.frame.previousPage:Hide()
 		end
 		if (currentPage <= 1) then
-			ModernSpellBookFrame.previousPage:Disable()
+			self.frame.previousPage:Disable()
 		else
-			ModernSpellBookFrame.previousPage:Enable()
+			self.frame.previousPage:Enable()
 		end
-		if (currentPage >= ModernSpellBookFrame.maxPages) then
-			ModernSpellBookFrame.nextPage:Disable()
+		if (currentPage >= self.frame.maxPages) then
+			self.frame.nextPage:Disable()
 		else
-			ModernSpellBookFrame.nextPage:Enable()
+			self.frame.nextPage:Enable()
 		end
 
 		local totalCategories = 0
@@ -735,8 +734,8 @@ class "CSpellBook"
 	-- =================== CUSTOM TABS =============================
 
 	CreateCustomTabs = function(self)
-		if (not ModernSpellBookFrame.customTabs) then
-			ModernSpellBookFrame.customTabs = {}
+		if (not self.frame.customTabs) then
+			self.frame.customTabs = {}
 		end
 
 		local customTabDefs = {"Companions", "Mounts", "Toys"}
@@ -744,7 +743,7 @@ class "CSpellBook"
 
 		for _, customName in ipairs(customTabDefs) do
 			local alreadyExists = false
-			for _, info in pairs(ModernSpellBookFrame.customTabs) do
+			for _, info in pairs(self.frame.customTabs) do
 				if (info.spellTabName == customName) then
 					alreadyExists = true
 					break
@@ -755,9 +754,9 @@ class "CSpellBook"
 				for i = 1, numTabs do
 					local tabName = GetSpellTabInfo(i)
 					if (tabName == customName) then
-						local tabIndex = table.getn(ModernSpellBookFrame.Tabgroups) + 1
+						local tabIndex = table.getn(self.frame.Tabgroups) + 1
 						self:NewTab(customName)
-						ModernSpellBookFrame.customTabs[tabIndex] = { spellTabName = customName }
+						self.frame.customTabs[tabIndex] = { spellTabName = customName }
 						self:PositionAllTabs()
 						break
 					end
@@ -784,74 +783,74 @@ class "CSpellBook"
 
 	CleanPages = function(self)
 		for i = 1, totalSpellItems do
-			ModernSpellBookFrame["Spell".. i]:Hide()
+			self.frame["Spell".. i]:Hide()
 		end
 		for i = 1, totalCategoryItems do
-			ModernSpellBookFrame["Category".. i]:Hide()
+			self.frame["Category".. i]:Hide()
 		end
 	end;
 
 	GetOrCreateCategory = function(self, i)
-		local item = ModernSpellBookFrame["Category".. i]
+		local item = self.frame["Category".. i]
 		if (item ~= nil) then
 			return item
 		end
 		totalCategoryItems = totalCategoryItems + 1
-		item = CCategoryItem(ModernSpellBookFrame)
-		ModernSpellBookFrame["Category".. i] = item
+		item = CCategoryItem(self.frame)
+		self.frame["Category".. i] = item
 		return item
 	end;
 
 	GetOrCreateSpellItem = function(self, i)
-		local item = ModernSpellBookFrame["Spell".. i]
+		local item = self.frame["Spell".. i]
 		if (item ~= nil) then
 			return item
 		end
 		totalSpellItems = totalSpellItems + 1
-		item = CSpellItem(ModernSpellBookFrame, i)
-		ModernSpellBookFrame["Spell".. i] = item
+		item = CSpellItem(self.frame, i)
+		self.frame["Spell".. i] = item
 		return item
 	end;
 
 	-- =================== TAB MANAGEMENT ==========================
 
 	NewTab = function(self, name)
-		local tabNumber = table.getn(ModernSpellBookFrame.Tabgroups) + 1
+		local tabNumber = table.getn(self.frame.Tabgroups) + 1
 
-		local tab = CTab(ModernSpellBookFrame, name, tabNumber, function(clickedTab)
-			local wasPreviousSelectionDifferent = ModernSpellBookFrame.selectedTab ~= clickedTab.tab_number
+		local tab = CTab(self.frame, name, tabNumber, function(clickedTab)
+			local wasPreviousSelectionDifferent = self.frame.selectedTab ~= clickedTab.tab_number
 			if (not wasPreviousSelectionDifferent) then return end
 
 			PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-			ModernSpellBookFrame.selectedTab = clickedTab.tab_number
+			self.frame.selectedTab = clickedTab.tab_number
 			ModernSpellBook_DB.lastTab = clickedTab.tab_number
 
 			clickedTab:SetSelected()
 
-			for _, other_tab in ipairs(ModernSpellBookFrame.Tabgroups) do
+			for _, other_tab in ipairs(self.frame.Tabgroups) do
 				if (other_tab ~= clickedTab) then
 					other_tab:SetDeselected()
 				end
 			end
 
-			ModernSpellBookFrame.currentPage = 1
+			self.frame.currentPage = 1
 			ModernSpellBook_DB.lastPage = 1
-			ModernSpellBookFrame.previousPage:Disable()
+			self.frame.previousPage:Disable()
 			SpellBook:DrawPage()
 		end)
 
-		table.insert(ModernSpellBookFrame.Tabgroups, tab)
+		table.insert(self.frame.Tabgroups, tab)
 		return tab
 	end;
 
 	GetFinalVisibleTab = function(self)
 		local finalVisibleTab = 1
-		for i = 1, table.getn(ModernSpellBookFrame.Tabgroups) do
-			if (ModernSpellBookFrame.Tabgroups[i]:IsShown()) then
+		for i = 1, table.getn(self.frame.Tabgroups) do
+			if (self.frame.Tabgroups[i]:IsShown()) then
 				finalVisibleTab = i
 			end
 		end
-		return ModernSpellBookFrame.Tabgroups[finalVisibleTab]
+		return self.frame.Tabgroups[finalVisibleTab]
 	end;
 
 	GetRightmostLeftButton = function(self)
@@ -870,20 +869,20 @@ class "CSpellBook"
 
 	PositionAllTabs = function(self)
 		if (ModernSpellBook_DB.isMinimized) then
-			for _, tab in ipairs(ModernSpellBookFrame.Tabgroups) do
-				tab:UpdatePosition(false, ModernSpellBookFrame.Tabgroups)
+			for _, tab in ipairs(self.frame.Tabgroups) do
+				tab:UpdatePosition(false, self.frame.Tabgroups)
 			end
 
 			local lastTab = self:GetFinalVisibleTab()
 			local left = lastTab:GetRight()
 			local right = self:GetRightmostLeftButton():GetLeft()
 
-			for _, tab in ipairs(ModernSpellBookFrame.Tabgroups) do
-				tab:SetMinmaxPosition(left and right and left > right, ModernSpellBookFrame.Tabgroups)
+			for _, tab in ipairs(self.frame.Tabgroups) do
+				tab:SetMinmaxPosition(left and right and left > right, self.frame.Tabgroups)
 			end
 		else
-			for _, tab in ipairs(ModernSpellBookFrame.Tabgroups) do
-				tab:SetMinmaxPosition(false, ModernSpellBookFrame.Tabgroups)
+			for _, tab in ipairs(self.frame.Tabgroups) do
+				tab:SetMinmaxPosition(false, self.frame.Tabgroups)
 			end
 		end
 	end;
