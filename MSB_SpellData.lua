@@ -117,10 +117,10 @@ class "CSpellDataService"
 			table.insert(keywords, keyword)
 		end
 
-		if (table.getn(keywords) == 0) then return ModernSpellBookFrame.AllSpells end
+		if (table.getn(keywords) == 0) then return ModernSpellBookFrame.AllSpells or {} end
 
 		local filteredSpells = {}
-		for category, spellList in pairs(ModernSpellBookFrame.AllSpells) do
+		for category, spellList in pairs(ModernSpellBookFrame.AllSpells or {}) do
 			for _, spellInfo in ipairs(spellList) do
 				local lookupString = spellInfo.spellName.. spellInfo.spellRank
 				local isMatch = true

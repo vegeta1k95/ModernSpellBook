@@ -55,29 +55,33 @@ class "CCategoryItem"
 
 	-- ========================= SET ===============================
 
-	Set = function(self, categoryName, currentPageRows, page)
+	Set = function(self, categoryName, currentPageRows, page, fallbackIcon)
 		self.text:SetText(categoryName)
 
-		-- Look up spec icon from talent tabs or spell tabs
+		-- Look up spec icon: spell tabs first, talent tabs, then first spell icon
 		local specIconFound = false
-		for t = 1, GetNumTalentTabs() do
-			local tabName, tabIcon = GetTalentTabInfo(t)
-			if (tabName == categoryName) then
-				self.specIcon:SetTexture(tabIcon)
+		local numTabs = GetNumSpellTabs and GetNumSpellTabs() or 4
+		for t = 1, numTabs do
+			local tabName, tabIcon = GetSpellTabInfo(t)
+			if (tabName == categoryName and tabIcon) then
+				self.specIcon:SetTexture(MSB_ResolveTexture(tabIcon))
 				specIconFound = true
 				break
 			end
 		end
 		if (not specIconFound) then
-			local numTabs = GetNumSpellTabs and GetNumSpellTabs() or 4
-			for t = 1, numTabs do
-				local tabName, tabIcon = GetSpellTabInfo(t)
+			for t = 1, GetNumTalentTabs() do
+				local tabName, tabIcon = GetTalentTabInfo(t)
 				if (tabName == categoryName and tabIcon) then
-					self.specIcon:SetTexture(tabIcon)
+					self.specIcon:SetTexture(MSB_ResolveTexture(tabIcon))
 					specIconFound = true
 					break
 				end
 			end
+		end
+		if (not specIconFound and fallbackIcon) then
+			self.specIcon:SetTexture(MSB_ResolveTexture(fallbackIcon))
+			specIconFound = true
 		end
 		if (not specIconFound) then
 			self.specIconFrame:Hide()

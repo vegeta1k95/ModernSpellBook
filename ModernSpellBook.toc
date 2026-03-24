@@ -27,3 +27,4 @@ MSB_TrainerData.lua
 MSB_Talents.lua
 MSB_Tabs.lua
 MSB_SlashCommands.lua
+MSB_Debug.lua

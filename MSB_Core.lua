@@ -176,9 +176,7 @@ class "CSpellBook"
 			spellUpdateRequired = true
 		end
 
-		if (spellUpdateRequired) then
-			self:DrawPage()
-		end
+		self:DrawPage()
 
 		-- Show/hide trainer hint
 		if (self.frame.trainerHint) then
@@ -722,7 +720,17 @@ class "CSpellBook"
 			if (element.isCategory) then
 				grid_x = -1
 				totalCategories = totalCategories +1
-				self:GetOrCreateCategory(totalCategories):Set(element.category, element.currentPageRows, element.drawingPageNumber)
+				-- Find first spell icon in this category as fallback
+				local fallbackIcon = nil
+				for j = i + 1, table.getn(pageCollection[currentPage]) do
+					local next = pageCollection[currentPage][j]
+					if (next.isCategory) then break end
+					if (next.spellInfo and next.spellInfo.spellIcon) then
+						fallbackIcon = next.spellInfo.spellIcon
+						break
+					end
+				end
+				self:GetOrCreateCategory(totalCategories):Set(element.category, element.currentPageRows, element.drawingPageNumber, fallbackIcon)
 			else
 				grid_x = math.mod(grid_x + 1, 3)
 				totalSpells = totalSpells +1
