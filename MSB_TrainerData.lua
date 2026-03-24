@@ -183,11 +183,13 @@ class "CTrainerDataService"
 		end
 
 		-- Mark all lower ranks as known
+		-- If a spell is known without a numeric rank (highest == 0),
+		-- it's a rankless spell — all trainer ranks are already learned
 		for key, spellData in pairs(classSpells) do
 			local _, _, num = string.find(spellData.rank or "", "(%d+)")
 			local rankNum = tonumber(num) or 0
 			local highest = knownHighestRank[spellData.name]
-			if (highest and rankNum <= highest) then
+			if (highest and (rankNum <= highest or highest == 0)) then
 				knownSet[key] = true
 			end
 		end
