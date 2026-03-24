@@ -298,12 +298,11 @@ class "CSpellBook"
 
 		-- Bookmark
 		ModernSpellBookFrame.bookmark = ModernSpellBookFrame:CreateTexture(nil, "OVERLAY")
-		ModernSpellBookFrame.bookmark:SetWidth(65)
-		ModernSpellBookFrame.bookmark:SetHeight(340)
-		ModernSpellBookFrame.bookmark:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", windowSettings.width1-75, -57)
+		ModernSpellBookFrame.bookmark:SetWidth(64)
+		ModernSpellBookFrame.bookmark:SetHeight(256)
+		ModernSpellBookFrame.bookmark:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", windowSettings.width1-65, -53)
 		ModernSpellBookFrame.bookmark:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\bookmark")
 		ModernSpellBookFrame.bookmark:SetTexCoord(1, 0, 0, 1)
-		ModernSpellBookFrame.bookmark:SetVertexColor(classColors[classID][1], classColors[classID][2], classColors[classID][3])
 		classColors = nil
 
 		ModernSpellBookFrame.noresultsText = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
