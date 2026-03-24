@@ -36,8 +36,8 @@ class "CIcon"
 
 		-- Round border (alternative style, hidden by default)
 		self.round_border_frame = CreateFrame("Frame", nil, parent)
-		self.round_border_frame:SetWidth(self.size + 28)
-		self.round_border_frame:SetHeight(self.size + 28)
+		self.round_border_frame:SetWidth(self.size + 8)
+		self.round_border_frame:SetHeight(self.size + 8)
 		self.round_border_frame:SetPoint("CENTER", self.icon, "CENTER", 0, 0)
 		self.round_border_frame:SetFrameLevel(parent:GetFrameLevel() + 3)
 		self.round_border = self.round_border_frame:CreateTexture(nil, "OVERLAY")
