@@ -281,40 +281,26 @@ class "CSpellBook"
 		ModernSpellBookFrame.portraitBorder:SetAllPoints(ModernSpellBookFrame.portraitBorderFrame)
 		ModernSpellBookFrame.portraitBorder:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-frame")
 
-		-- Background pages
+		-- Background pages (top anchor positions, bottom anchor = frame bottom, height auto)
 		ModernSpellBookFrame.backgroundLeft = ModernSpellBookFrame:CreateTexture(nil, "ARTWORK")
-		ModernSpellBookFrame.backgroundLeft:SetWidth(windowSettings.width1 -30)
-		ModernSpellBookFrame.backgroundLeft:SetHeight(499)
+		ModernSpellBookFrame.backgroundLeft:SetWidth(550)
 		ModernSpellBookFrame.backgroundLeft:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 15, -50)
+		ModernSpellBookFrame.backgroundLeft:SetPoint("BOTTOMLEFT", ModernSpellBookFrame, "BOTTOMLEFT", 0, 15)
 		ModernSpellBookFrame.backgroundLeft:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-1")
-		ModernSpellBookFrame.backgroundLeft:SetTexCoord(1, 0.04, 0, 0.93)
-
-		ModernSpellBookFrame.backgroundLeftEnd = ModernSpellBookFrame:CreateTexture(nil, "ARTWORK")
-		ModernSpellBookFrame.backgroundLeftEnd:SetWidth(40)
-		ModernSpellBookFrame.backgroundLeftEnd:SetHeight(499)
-		ModernSpellBookFrame.backgroundLeftEnd:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", -15, -50)
-		ModernSpellBookFrame.backgroundLeftEnd:SetTexture("Interface\\Spellbook\\spellbook-page-2")
-		ModernSpellBookFrame.backgroundLeftEnd:SetTexCoord(1, 0.04, 0, 0.93)
+		ModernSpellBookFrame.backgroundLeft:SetTexCoord(1, 0, 0, 1)
 
 		ModernSpellBookFrame.backgroundRight = ModernSpellBookFrame:CreateTexture(nil, "ARTWORK")
 		ModernSpellBookFrame.backgroundRight:SetWidth(510)
-		ModernSpellBookFrame.backgroundRight:SetHeight(499)
 		ModernSpellBookFrame.backgroundRight:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 535, -50)
+		ModernSpellBookFrame.backgroundRight:SetPoint("BOTTOMRIGHT", ModernSpellBookFrame, "BOTTOMRIGHT", -15, 15)
 		ModernSpellBookFrame.backgroundRight:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-1")
-		ModernSpellBookFrame.backgroundRight:SetTexCoord(0.123, 1, 0, 0.93)
-
-		ModernSpellBookFrame.backgroundRightEnd = ModernSpellBookFrame:CreateTexture(nil, "ARTWORK")
-		ModernSpellBookFrame.backgroundRightEnd:SetWidth(40)
-		ModernSpellBookFrame.backgroundRightEnd:SetHeight(499)
-		ModernSpellBookFrame.backgroundRightEnd:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 545 +500, -50)
-		ModernSpellBookFrame.backgroundRightEnd:SetTexture("Interface\\Spellbook\\spellbook-page-2")
-		ModernSpellBookFrame.backgroundRightEnd:SetTexCoord(0.125, 1, 0, 0.93)
+		ModernSpellBookFrame.backgroundRight:SetTexCoord(0.123, 1, 0, 1)
 
 		-- Bookmark
 		ModernSpellBookFrame.bookmark = ModernSpellBookFrame:CreateTexture(nil, "OVERLAY")
 		ModernSpellBookFrame.bookmark:SetWidth(65)
 		ModernSpellBookFrame.bookmark:SetHeight(340)
-		ModernSpellBookFrame.bookmark:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", windowSettings.width1-75, -60)
+		ModernSpellBookFrame.bookmark:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", windowSettings.width1-75, -57)
 		ModernSpellBookFrame.bookmark:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\bookmark")
 		ModernSpellBookFrame.bookmark:SetTexCoord(1, 0, 0, 1)
 		ModernSpellBookFrame.bookmark:SetVertexColor(classColors[classID][1], classColors[classID][2], classColors[classID][3])
@@ -328,14 +314,14 @@ class "CSpellBook"
 		ModernSpellBookFrame.noresultsText:Hide()
 
 		ModernSpellBookFrame.trainerHint = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.trainerHint:SetPoint("BOTTOM", ModernSpellBookFrame, "BOTTOM", 0, 15)
+		ModernSpellBookFrame.trainerHint:SetPoint("BOTTOM", ModernSpellBookFrame, "BOTTOM", 0, 60)
 		ModernSpellBookFrame.trainerHint:SetText("Visit a class trainer in a major city to fetch the FULL list of available spells.")
 		ModernSpellBookFrame.trainerHint:SetFont("Fonts\\FRIZQT__.TTF", 10)
-		ModernSpellBookFrame.trainerHint:SetTextColor(0.6, 0.6, 0.6)
+		ModernSpellBookFrame.trainerHint:SetTextColor(1, 1, 1)
 		ModernSpellBookFrame.trainerHint:Hide()
 
 		ModernSpellBookFrame.spellCounter = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.spellCounter:SetPoint("BOTTOMLEFT", ModernSpellBookFrame, "BOTTOMLEFT", 30, 25)
+		ModernSpellBookFrame.spellCounter:SetPoint("BOTTOMLEFT", ModernSpellBookFrame, "BOTTOMLEFT", 60, 60)
 		ModernSpellBookFrame.spellCounter:SetFont("Fonts\\FRIZQT__.TTF", 10)
 		ModernSpellBookFrame.spellCounter:SetTextColor(1, 1, 1)
 
@@ -395,10 +381,9 @@ class "CSpellBook"
 
 	AddPageButtons = function(self)
 		ModernSpellBookFrame.pageText = ModernSpellBookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		ModernSpellBookFrame.pageText:SetPoint("BOTTOMRIGHT", ModernSpellBookFrame, "BOTTOMRIGHT", -95, 25)
+		ModernSpellBookFrame.pageText:SetPoint("BOTTOMRIGHT", ModernSpellBookFrame, "BOTTOMRIGHT", -110, 60)
 		ModernSpellBookFrame.pageText:SetText("Page 1")
-		ModernSpellBookFrame.pageText:SetTextColor(0, 0, 0)
-		ModernSpellBookFrame.pageText:SetShadowOffset(0, 0)
+		ModernSpellBookFrame.pageText:SetTextColor(1, 1, 1)
 
 		ModernSpellBookFrame.previousPage = CreateFrame("Button", nil, ModernSpellBookFrame)
 		ModernSpellBookFrame.previousPage:SetWidth(25)
@@ -420,7 +405,7 @@ class "CSpellBook"
 		ModernSpellBookFrame.nextPage = CreateFrame("Button", nil, ModernSpellBookFrame)
 		ModernSpellBookFrame.nextPage:SetWidth(25)
 		ModernSpellBookFrame.nextPage:SetHeight(25)
-		ModernSpellBookFrame.nextPage:SetPoint("TOPLEFT", ModernSpellBookFrame.previousPage, "TOPLEFT", 30, 0)
+		ModernSpellBookFrame.nextPage:SetPoint("TOPLEFT", ModernSpellBookFrame.previousPage, "TOPLEFT", 24, 0)
 		ModernSpellBookFrame.nextPage:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up")
 		ModernSpellBookFrame.nextPage:SetHighlightTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
 		ModernSpellBookFrame.nextPage:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
@@ -537,7 +522,6 @@ class "CSpellBook"
 
 			ModernSpellBookFrame:SetPoint("LEFT", UIParent, "LEFT", 15, windowSettings.posy)
 			ModernSpellBookFrame.backgroundRight:Hide()
-			ModernSpellBookFrame.backgroundRightEnd:Hide()
 			ModernSpellBookFrame.searchBar:Clear()
 			ModernSpellBookFrame.searchBar:Hide()
 		else
@@ -553,7 +537,7 @@ class "CSpellBook"
 			ModernSpellBookFrame:SetPoint("CENTER", UIParent, "CENTER", 0, windowSettings.posy)
 
 			ModernSpellBookFrame.backgroundRight:Show()
-			ModernSpellBookFrame.backgroundRightEnd:Show()
+
 			ModernSpellBookFrame.searchBar:Show()
 		end
 
