@@ -27,13 +27,13 @@ A modern, retail-inspired spellbook replacement for **Turtle WoW** (1.12.1 vanil
 ## Screenshots
 
 ### Class Spells
-![Class Spells](screenshots/screenshot1.png)
+![Class Spells](screenshots/screenshot3.png)
 
 ### General & Professions
 ![General & Professions](screenshots/screenshot2.png)
 
 ### Black theme (optional)
-![Unlearned Spells](screenshots/screenshot3.png)
+![Unlearned Spells](screenshots/screenshot1.png)
 
 ## Installation
 
