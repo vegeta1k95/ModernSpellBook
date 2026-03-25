@@ -23,11 +23,11 @@ class "CTalentService"
 	MarkSpellAsTalent = function(self, spellInfo)
 		spellInfo.isTalentAbility = true
 
-		local lookupString = spellInfo.spellName.. spellInfo.spellRank
-		local lookupContents = ModernSpellBook_DB.knownSpells[lookupString]
+		local key = MSB_SpellKey(spellInfo.spellName, spellInfo.spellRank)
+		local entry = ModernSpellBook_DB.spells[key]
 
-		if (lookupContents and not string.find(lookupContents, talentKeyword)) then
-			ModernSpellBook_DB.knownSpells[lookupString] = lookupContents.. talentKeyword
+		if (entry and entry.keywords and not string.find(entry.keywords, talentKeyword)) then
+			entry.keywords = entry.keywords .. talentKeyword
 		end
 	end;
 
@@ -65,11 +65,7 @@ class "CTalentService"
 							category = talentGroupName
 						}
 
-						local lookupString = spellInfo.spellName.. spellInfo.spellRank
-						if (ModernSpellBook_DB.knownSpells[lookupString] == nil) then
-							ModernSpellBook_DB.knownSpells[lookupString] = SpellDataService:BuildSpellLookupTable(spellInfo).. string.lower(SpellDataService:CreateLookup(NEW))
-						end
-
+						SpellDataService:RegisterSpell(spellInfo)
 						table.insert(talentGridPositions[talentGroupName], spellInfo)
 					end
 				end
@@ -83,15 +79,18 @@ class "CTalentService"
 
 	ResetKnownTalents = function(self)
 		local talentGridPositions = self:GetAllTalents(false)
-		for knownSpell, _ in pairs(ModernSpellBook_DB.knownSpells) do
+		local keysToRemove = {}
+		for spellKey, entry in pairs(ModernSpellBook_DB.spells) do
 			for talentGroupName, talents in pairs(talentGridPositions) do
 				for _, talentInfo in ipairs(talents) do
-					local lookupString = talentInfo.spellName
-					if (string.find(knownSpell, lookupString)) then
-						ModernSpellBook_DB.knownSpells[knownSpell] = nil
+					if (string.find(spellKey, talentInfo.spellName, 1, true)) then
+						table.insert(keysToRemove, spellKey)
 					end
 				end
 			end
+		end
+		for _, key in ipairs(keysToRemove) do
+			ModernSpellBook_DB.spells[key] = nil
 		end
 	end;
 }

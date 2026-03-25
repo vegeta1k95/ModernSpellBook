@@ -90,16 +90,16 @@ class "CSlashCommands"
 	-- ======================= COMMANDS =============================
 
 	ResetSettings = function(self)
-		local knownSpells = ModernSpellBook_DB.knownSpells
-		local trainerSpells = ModernSpellBook_DB.trainerSpells
-		local seenAvailable = ModernSpellBook_DB.seenAvailable
+		local dbVersion = ModernSpellBook_DB.dbVersion
+		local spells = ModernSpellBook_DB.spells
+		local trainerScanned = ModernSpellBook_DB.trainerScanned
 
 		ModernSpellBook_DB = {
+			dbVersion = dbVersion,
+			spells = spells or {},
+			trainerScanned = trainerScanned,
 			showPassives = true,
 			isMinimized = false,
-			knownSpells = knownSpells or {},
-			trainerSpells = trainerSpells,
-			seenAvailable = seenAvailable,
 			showSpellCounter = true,
 			rememberPage = true,
 			showUnlearned = true,
@@ -112,10 +112,19 @@ class "CSlashCommands"
 	end;
 
 	ClearTrainerCache = function(self)
-		if (ModernSpellBook_DB.trainerSpells) then
-			local _, englishClass = UnitClass("player")
-			ModernSpellBook_DB.trainerSpells[englishClass] = nil
-			ModernSpellBook_DB.seenAvailable = {}
+		if (ModernSpellBook_DB.trainerScanned) then
+			-- Remove all unlearned spell entries
+			local keysToRemove = {}
+			for key, entry in pairs(ModernSpellBook_DB.spells) do
+				if (not entry.learned) then
+					table.insert(keysToRemove, key)
+				end
+			end
+			for _, key in ipairs(keysToRemove) do
+				ModernSpellBook_DB.spells[key] = nil
+			end
+			ModernSpellBook_DB.trainerScanned = false
+			ModernSpellBook_DB.trainerServiceCount = nil
 			DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Trainer cache cleared. Visit a trainer to rescan.")
 
 			if (ModernSpellBookFrame:IsVisible()) then

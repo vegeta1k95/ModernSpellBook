@@ -8,7 +8,7 @@ local classColors = {{0.87,0.38,0.21}, {0.96,0.55,0.73}, {0.67,0.83,0.45}, {1.00
 
 local maximumPages = 2
 local spellUpdateRequired = true
-local currentAddonVersion = "1.4"
+local DB_VERSION = 3
 
 local windowSettings = {
 	posy = 0,
@@ -67,23 +67,28 @@ class "CSpellBook"
 	OnAddonLoaded = function(self)
 		if (arg1 ~= "ModernSpellBook") then return end
 
-		ModernSpellBook_DB = ModernSpellBook_DB or {showPassives = true, isMinimized = false, knownSpells = {}, addonVersion = currentAddonVersion}
-		if (ModernSpellBook_DB.showSpellCounter == nil) then
-			ModernSpellBook_DB.showSpellCounter = true
+		-- Wipe DB if schema version mismatch
+		if (not ModernSpellBook_DB) then
+			ModernSpellBook_DB = {}
 		end
-		if (ModernSpellBook_DB.rememberPage == nil) then
-			ModernSpellBook_DB.rememberPage = true
+		if (ModernSpellBook_DB.dbVersion ~= DB_VERSION) then
+			for k in pairs(ModernSpellBook_DB) do
+				ModernSpellBook_DB[k] = nil
+			end
+			DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Settings reset (DB version " .. DB_VERSION .. ").")
 		end
-		if (ModernSpellBook_DB.showUnlearned == nil) then
-			ModernSpellBook_DB.showUnlearned = true
-		end
-		if (not ModernSpellBook_DB.fontSize) then
-			ModernSpellBook_DB.fontSize = 11.5
-		end
+
+		-- Defaults
+		if (ModernSpellBook_DB.showPassives == nil) then ModernSpellBook_DB.showPassives = true end
+		if (ModernSpellBook_DB.showSpellCounter == nil) then ModernSpellBook_DB.showSpellCounter = true end
+		if (ModernSpellBook_DB.rememberPage == nil) then ModernSpellBook_DB.rememberPage = true end
+		if (ModernSpellBook_DB.showUnlearned == nil) then ModernSpellBook_DB.showUnlearned = true end
+		if (not ModernSpellBook_DB.fontSize) then ModernSpellBook_DB.fontSize = 11.5 end
 		if (not ModernSpellBook_DB.highlights) then
 			ModernSpellBook_DB.highlights = { learnedGlow = true, learnedBadge = true, availableGlow = true, availableBadge = true }
 		end
-		self:AlterOlderSavedVariables()
+		if (not ModernSpellBook_DB.spells) then ModernSpellBook_DB.spells = {} end
+		ModernSpellBook_DB.dbVersion = DB_VERSION
 
 		self.frame.ClientLocale = Localization.current
 		self.frame.currentPage = ModernSpellBook_DB.rememberPage and ModernSpellBook_DB.lastPage or 1
@@ -147,7 +152,7 @@ class "CSpellBook"
 			self:SetShape(ModernSpellBook_DB.isMinimized)
 			self:PositionAllTabs()
 
-			if (next(ModernSpellBook_DB.knownSpells) == nil) then
+			if (next(ModernSpellBook_DB.spells) == nil) then
 				SpellDataService:SetupInitiallyKnownSpells()
 			end
 
@@ -184,14 +189,7 @@ class "CSpellBook"
 
 		-- Show/hide trainer hint
 		if (self.frame.trainerHint) then
-			local _, englishClass = UnitClass("player")
-			local spellCount = 0
-			if (ModernSpellBook_DB.trainerSpells and ModernSpellBook_DB.trainerSpells[englishClass]) then
-				for _ in pairs(ModernSpellBook_DB.trainerSpells[englishClass]) do
-					spellCount = spellCount + 1
-				end
-			end
-			if (ModernSpellBook_DB.showUnlearned and spellCount < 50) then
+			if (ModernSpellBook_DB.showUnlearned and not ModernSpellBook_DB.trainerScanned) then
 				self.frame.trainerHint:Show()
 			else
 				self.frame.trainerHint:Hide()
@@ -220,14 +218,6 @@ class "CSpellBook"
 			end
 			self.frame.isForceLoading = false
 		end)
-	end;
-
-	AlterOlderSavedVariables = function(self)
-		if (ModernSpellBook_DB.addonVersion == nil) then
-			ModernSpellBook_DB.addonVersion = currentAddonVersion
-			ModernSpellBook_DB.knownSpells = {}
-		end
-		ModernSpellBook_DB.addonVersion = currentAddonVersion
 	end;
 
 	AddSearchBar = function(self)
@@ -917,5 +907,10 @@ end
 local levelTracker = CreateFrame("Frame")
 levelTracker:RegisterEvent("PLAYER_LEVEL_UP")
 levelTracker:SetScript("OnEvent", function()
-	ModernSpellBook_DB.seenAvailable = {}
+	-- Reset seen_trainable flags so newly available spells glow again
+	for key, entry in pairs(ModernSpellBook_DB.spells) do
+		if (not entry.learned) then
+			entry.seen_trainable = false
+		end
+	end
 end)

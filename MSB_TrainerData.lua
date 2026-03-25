@@ -1,6 +1,6 @@
 --[[
-	Captures class spells from the trainer window and caches them
-	in SavedVariables. Used to show unlearned spells (greyed out).
+	Captures class spells from the trainer window and stores them
+	in the unified DB.spells table with learned=false.
 --]]
 
 class "CTrainerDataService"
@@ -25,29 +25,40 @@ class "CTrainerDataService"
 		local numServices = GetNumTrainerServices()
 		if (not numServices or numServices == 0) then return end
 
-		if (not ModernSpellBook_DB.trainerSpells) then
-			ModernSpellBook_DB.trainerSpells = {}
+		-- Detect if this is a class trainer by checking if any
+		-- service header matches a talent tab or class spell tab name
+		local classCategories = {}
+		for t = 1, GetNumTalentTabs() do
+			local name = GetTalentTabInfo(t)
+			if (name) then classCategories[name] = true end
 		end
+		local numSpellTabs = GetNumSpellTabs and GetNumSpellTabs() or 4
+		for i = 1, numSpellTabs do
+			local name = GetSpellTabInfo(i)
+			if (name) then classCategories[name] = true end
+		end
+		classCategories[GENERAL or "General"] = true
 
-		local _, englishClass = UnitClass("player")
-
-		-- Count existing captured spells
-		local existingCount = 0
-		if (ModernSpellBook_DB.trainerSpells[englishClass]) then
-			for _ in pairs(ModernSpellBook_DB.trainerSpells[englishClass]) do
-				existingCount = existingCount + 1
+		local isClassTrainer = false
+		for i = 1, numServices do
+			local ok, name = pcall(GetTrainerServiceInfo, i)
+			if (ok and name) then
+				name = string.gsub(string.gsub(name, "^%s+", ""), "%s+$", "")
+				if (classCategories[name]) then
+					isClassTrainer = true
+					break
+				end
 			end
 		end
 
-		-- Only rescan if trainer has more services than we've captured
-		if (existingCount >= numServices) then
-			return
-		end
+		if (not isClassTrainer) then return end
 
-		if (not ModernSpellBook_DB.trainerSpells[englishClass]) then
-			ModernSpellBook_DB.trainerSpells[englishClass] = {}
+		-- Skip if we already scanned and trainer hasn't changed
+		if (ModernSpellBook_DB.trainerScanned and ModernSpellBook_DB.trainerServiceCount) then
+			if (numServices <= ModernSpellBook_DB.trainerServiceCount) then
+				return
+			end
 		end
-		local classSpells = ModernSpellBook_DB.trainerSpells[englishClass]
 
 		-- Enable all filters so we capture everything
 		pcall(function()
@@ -77,6 +88,8 @@ class "CTrainerDataService"
 			["Shield"] = true, ["Block"] = true, ["Parry"] = true, ["Dodge"] = true,
 			["Dual Wield"] = true,
 		}
+
+		local capturedCount = 0
 
 		for i = 1, numServices do
 			local name, rank, category, expanded
@@ -129,24 +142,43 @@ class "CTrainerDataService"
 						end
 					end)
 
-					local key = name .. (rank or "")
-					classSpells[key] = {
-						name = name,
-						rank = rank or "",
-						icon = icon,
-						levelReq = levelReq,
-						serviceType = category or "",
-						category = currentSpecHeader,
-						description = description,
-						cost = cost,
-					}
+					local key = MSB_SpellKey(name, rank or "")
+					local entry = ModernSpellBook_DB.spells[key]
+
+					if (not entry) then
+						-- New spell from trainer, player doesn't know it yet
+						ModernSpellBook_DB.spells[key] = {
+							icon = icon,
+							category = currentSpecHeader,
+							desc = description,
+							cost = cost,
+							level_req = levelReq,
+							keywords = string.lower(name .. ";" .. (rank or "") .. ";" .. currentSpecHeader .. ";"),
+							learned = false,
+							seen_new = true,
+							seen_trainable = false,
+						}
+						capturedCount = capturedCount + 1
+					elseif (not entry.learned) then
+						-- Already registered as unlearned, update trainer data
+						entry.icon = icon
+						entry.category = currentSpecHeader
+						entry.desc = description
+						entry.cost = cost
+						entry.level_req = levelReq
+						capturedCount = capturedCount + 1
+					else
+						-- Already learned, just update metadata
+						capturedCount = capturedCount + 1
+					end
 				end
 			end
 		end
 
-		local count = 0
-		for _ in pairs(classSpells) do count = count + 1 end
-		DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Captured " .. count .. " spells from trainer.")
+		ModernSpellBook_DB.trainerScanned = true
+		ModernSpellBook_DB.trainerServiceCount = numServices
+
+		DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Captured " .. capturedCount .. " spells from trainer.")
 
 		if (ModernSpellBookFrame:IsVisible()) then
 			SpellBook:DrawPage()
@@ -156,13 +188,7 @@ class "CTrainerDataService"
 	-- ================= UNLEARNED SPELLS =======================
 
 	GetUnlearnedSpells = function(self)
-		if (not ModernSpellBook_DB.trainerSpells) then return {} end
-
-		local _, englishClass = UnitClass("player")
-		local classSpells = ModernSpellBook_DB.trainerSpells[englishClass]
-		if (not classSpells) then return {} end
-
-		-- Build a set of currently known spell+rank combos
+		-- Build a set of currently known spells from spellbook
 		local knownSet = {}
 		local knownHighestRank = {}
 		local numTabs = GetNumSpellTabs and GetNumSpellTabs() or 4
@@ -172,25 +198,13 @@ class "CTrainerDataService"
 			for s = offset + 1, offset + numSpells do
 				local spellName, spellRank = GetSpellName(s, BOOKTYPE_SPELL)
 				if (spellName) then
-					knownSet[spellName .. (spellRank or "")] = true
+					knownSet[MSB_SpellKey(spellName, spellRank or "")] = true
 					local _, _, num = string.find(spellRank or "", "(%d+)")
 					local rankNum = tonumber(num) or 0
 					if (not knownHighestRank[spellName] or rankNum > knownHighestRank[spellName]) then
 						knownHighestRank[spellName] = rankNum
 					end
 				end
-			end
-		end
-
-		-- Mark all lower ranks as known
-		-- If a spell is known without a numeric rank (highest == 0),
-		-- it's a rankless spell — all trainer ranks are already learned
-		for key, spellData in pairs(classSpells) do
-			local _, _, num = string.find(spellData.rank or "", "(%d+)")
-			local rankNum = tonumber(num) or 0
-			local highest = knownHighestRank[spellData.name]
-			if (highest and (rankNum <= highest or highest == 0)) then
-				knownSet[key] = true
 			end
 		end
 
@@ -203,8 +217,8 @@ class "CTrainerDataService"
 					local nameTalent, icon, tier, column, currRank, maxRank = GetTalentInfo(t, i)
 					if (nameTalent and currRank == 0) then
 						local trainerHas = false
-						for key, spellData in pairs(classSpells) do
-							if (spellData.name == nameTalent) then
+						for spellKey, entry in pairs(ModernSpellBook_DB.spells) do
+							if (not entry.learned and string.find(spellKey, nameTalent, 1, true)) then
 								trainerHas = true
 								break
 							end
@@ -217,45 +231,55 @@ class "CTrainerDataService"
 			end
 		end
 
-		-- Find spells in trainer data that are NOT known
 		local unlearnedByCategory = {}
-		for key, spellData in pairs(classSpells) do
-			if (not knownSet[key]) then
-				local cat = spellData.category
-				if (cat == "") then cat = "Unknown" end
-				if (not unlearnedByCategory[cat]) then
-					unlearnedByCategory[cat] = {}
-				end
-				table.insert(unlearnedByCategory[cat], {
-					spellName = spellData.name,
-					spellRank = spellData.rank,
-					spellIcon = spellData.icon,
-					spellID = nil,
-					bookType = nil,
-					description = spellData.description,
-					cost = spellData.cost,
-					isPassive = (spellData.rank == "Passive" or spellData.rank == PET_PASSIVE),
-					isTalent = false,
-					isPetSpell = false,
-					isUnlearned = true,
-					talentBlocked = talentBlockedSpells[spellData.name] or false,
-					levelReq = spellData.levelReq,
-					castName = nil,
-					category = cat,
-				})
-			end
-		end
-
-		-- Also add unlearned talents
 		local trainerSpellNames = {}
-		if (classSpells) then
-			for key, spellData in pairs(classSpells) do
-				if (not trainerSpellNames[spellData.name]) then
-					trainerSpellNames[spellData.name] = true
+
+		-- Collect unlearned spells from DB (trainer data)
+		if (ModernSpellBook_DB.trainerScanned) then
+			for spellKey, entry in pairs(ModernSpellBook_DB.spells) do
+				if (not entry.learned) then
+					local pipePos = string.find(spellKey, "|", 1, true)
+					local name = string.sub(spellKey, 1, pipePos - 1)
+					local rank = string.sub(spellKey, pipePos + 1)
+
+					if (knownSet[spellKey]) then
+						entry.learned = true
+					else
+						local _, _, num = string.find(rank or "", "(%d+)")
+						local rankNum = tonumber(num) or 0
+						local highest = knownHighestRank[name]
+						if (highest and (rankNum <= highest or highest == 0)) then
+							entry.learned = true
+						else
+							local cat = entry.category or "Unknown"
+							if (not unlearnedByCategory[cat]) then
+								unlearnedByCategory[cat] = {}
+							end
+							table.insert(unlearnedByCategory[cat], {
+								spellName = name,
+								spellRank = rank,
+								spellIcon = entry.icon,
+								spellID = nil,
+								bookType = nil,
+								description = entry.desc,
+								cost = entry.cost,
+								isPassive = (rank == "Passive" or rank == PET_PASSIVE),
+								isTalent = false,
+								isPetSpell = false,
+								isUnlearned = true,
+								talentBlocked = talentBlockedSpells[name] or false,
+								levelReq = entry.level_req,
+								castName = nil,
+								category = cat,
+							})
+							trainerSpellNames[name] = true
+						end
+					end
 				end
 			end
 		end
 
+		-- Always add unlearned talents (doesn't require trainer data)
 		for t = 1, GetNumTalentTabs() do
 			local talentGroupName = GetTalentTabInfo(t)
 			if (talentGroupName) then
@@ -315,9 +339,9 @@ class "CTrainerDataService"
 									castName = nil,
 									category = talentGroupName,
 								})
-							end -- rankLabel check
-							end -- alreadyAdded check
-						end -- isKnown check
+							end
+							end
+						end
 					end
 				end
 			end

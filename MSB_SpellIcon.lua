@@ -313,8 +313,9 @@ class "CSpellBookIcon"
 		-- Available-to-learn glow/badge (light blue)
 		if (spellInfo.isUnlearned and not spellInfo.isTalent and spellInfo.levelReq) then
 			local player_level = UnitLevel("player")
-			local avail_key = spellInfo.spellName .. (spellInfo.spellRank or "")
-			local already_seen = ModernSpellBook_DB.seenAvailable and ModernSpellBook_DB.seenAvailable[avail_key]
+			local key = MSB_SpellKey(spellInfo.spellName, spellInfo.spellRank)
+			local entry = ModernSpellBook_DB.spells[key]
+			local already_seen = entry and entry.seen_trainable
 			if (spellInfo.levelReq <= player_level and not already_seen and not spellInfo.talentBlocked) then
 				if (hl and hl.availableGlow) then
 					self.glow_tex:SetVertexColor(0.204, 0.765, 0.922)
@@ -338,11 +339,11 @@ class "CSpellBookIcon"
 		if (self.glow_frame:IsShown()) then
 			self.glow_frame:Hide()
 			self.badge_train:Hide()
-			if (not ModernSpellBook_DB.seenAvailable) then
-				ModernSpellBook_DB.seenAvailable = {}
+			local key = MSB_SpellKey(spellInfo.spellName, spellInfo.spellRank)
+			local entry = ModernSpellBook_DB.spells[key]
+			if (entry) then
+				entry.seen_trainable = true
 			end
-			local avail_key = spellInfo.spellName .. (spellInfo.spellRank or "")
-			ModernSpellBook_DB.seenAvailable[avail_key] = true
 		end
 	end;
 

@@ -1,8 +1,12 @@
 --[[
 	Spell collection, filtering, lookup, and data logic.
+	Uses unified ModernSpellBook_DB.spells table.
 --]]
 
-MSB_NEW_KEYWORD = string.lower(";".. NEW.. ";")
+-- Global key helper: "SpellName|Rank"
+function MSB_SpellKey(name, rank)
+	return name .. "|" .. (rank or "")
+end
 
 local professionRanks = {
 	["Apprentice"] = true, ["Journeyman"] = true, ["Expert"] = true,
@@ -25,34 +29,84 @@ class "CSpellDataService"
 	__init = function(self)
 	end;
 
-	-- ====================== LOOKUP ===============================
+	-- ====================== KEYWORDS =============================
 
-	CreateLookup = function(self, lookupWord)
-		return lookupWord.. ";"
-	end;
-
-	BuildSpellLookupTable = function(self, spellInfo)
-		local lookupString = ""
-		lookupString = lookupString.. self:CreateLookup(spellInfo.spellName)
-		if (spellInfo.spellRank ~= "") then
-			lookupString = lookupString.. self:CreateLookup(spellInfo.spellRank)
+	BuildKeywords = function(self, spellInfo)
+		local kw = spellInfo.spellName .. ";"
+		if (spellInfo.spellRank and spellInfo.spellRank ~= "") then
+			kw = kw .. spellInfo.spellRank .. ";"
 		end
-		lookupString = lookupString.. self:CreateLookup(spellInfo.category)
+		if (spellInfo.category) then
+			kw = kw .. spellInfo.category .. ";"
+		end
 		if (spellInfo.isTalent or spellInfo.isTalentAbility) then
-			lookupString = lookupString.. self:CreateLookup(TALENT)
+			kw = kw .. TALENT .. ";"
 		else
-			local spellDescription = GetSpellDescription(spellInfo.spellID)
-			if (spellDescription ~= nil) then
-				lookupString = lookupString.. self:CreateLookup(spellDescription)
+			local desc = GetSpellDescription(spellInfo.spellID)
+			if (desc) then
+				kw = kw .. desc .. ";"
 			end
 		end
-		return string.lower(lookupString)
+		return string.lower(kw)
+	end;
+
+	-- ================= SPELL REGISTRATION ========================
+
+	RegisterSpell = function(self, spellInfo)
+		local key = MSB_SpellKey(spellInfo.spellName, spellInfo.spellRank)
+		local entry = ModernSpellBook_DB.spells[key]
+
+		if (not entry) then
+			-- First time seeing this spell
+			ModernSpellBook_DB.spells[key] = {
+				keywords = self:BuildKeywords(spellInfo),
+				learned = true,
+				seen_new = false,
+			}
+		else
+			-- Already registered (maybe from trainer data)
+			if (not entry.learned) then
+				entry.learned = true
+				entry.seen_new = false
+			end
+			entry.keywords = self:BuildKeywords(spellInfo)
+		end
+	end;
+
+	RegisterSpellSeen = function(self, spellInfo)
+		local key = MSB_SpellKey(spellInfo.spellName, spellInfo.spellRank)
+		local entry = ModernSpellBook_DB.spells[key]
+
+		if (not entry) then
+			ModernSpellBook_DB.spells[key] = {
+				keywords = self:BuildKeywords(spellInfo),
+				learned = true,
+				seen_new = true,
+			}
+		else
+			entry.keywords = self:BuildKeywords(spellInfo)
+			entry.learned = true
+			entry.seen_new = true
+		end
 	end;
 
 	IsProfessionSpell = function(self, spellInfo)
 		if (professionSpells[spellInfo.spellName]) then return true end
 		if (spellInfo.spellRank and professionRanks[spellInfo.spellRank]) then return true end
 		return false
+	end;
+
+	-- ====================== SORTING ==============================
+
+	SortSpells = function(self, spells)
+		table.sort(spells, function(a, b)
+			if (a.spellName ~= b.spellName) then
+				return a.spellName < b.spellName
+			end
+			local _, _, numA = string.find(a.spellRank or "", "(%d+)")
+			local _, _, numB = string.find(b.spellRank or "", "(%d+)")
+			return (tonumber(numA) or 0) < (tonumber(numB) or 0)
+		end)
 	end;
 
 	-- ====================== FILTERING ============================
@@ -122,12 +176,13 @@ class "CSpellDataService"
 		local filteredSpells = {}
 		for category, spellList in pairs(ModernSpellBookFrame.AllSpells or {}) do
 			for _, spellInfo in ipairs(spellList) do
-				local lookupString = spellInfo.spellName.. spellInfo.spellRank
+				local key = MSB_SpellKey(spellInfo.spellName, spellInfo.spellRank)
+				local entry = ModernSpellBook_DB.spells[key]
 				local isMatch = true
+
 				for _, keyword in ipairs(keywords) do
-					local knownSpell = ModernSpellBook_DB.knownSpells[lookupString]
-					if (knownSpell) then
-						if (not string.find(knownSpell, keyword)) then
+					if (entry and entry.keywords) then
+						if (not string.find(entry.keywords, keyword)) then
 							isMatch = false
 							break
 						end
@@ -218,10 +273,7 @@ class "CSpellDataService"
 				category = petName
 			}
 
-			local lookupString = spellInfo.spellName.. spellInfo.spellRank
-			if (ModernSpellBook_DB.knownSpells[lookupString] == nil) then
-				ModernSpellBook_DB.knownSpells[lookupString] = self:BuildSpellLookupTable(spellInfo).. string.lower(self:CreateLookup(NEW))
-			end
+			self:RegisterSpell(spellInfo)
 
 			if (not spellInfo.isPassive) then
 				table.insert(petSpells[petName], spellInfo)
@@ -254,11 +306,7 @@ class "CSpellDataService"
 			if (tabName == targetTabName) then
 				for s = offset + 1, offset + numSpells do
 					local spellInfo = self:SpellInfoFromSpellBookItem(tabName, s)
-
-					local lookupString = spellInfo.spellName.. spellInfo.spellRank
-					if (ModernSpellBook_DB.knownSpells[lookupString] == nil) then
-						ModernSpellBook_DB.knownSpells[lookupString] = self:BuildSpellLookupTable(spellInfo).. string.lower(self:CreateLookup(NEW))
-					end
+					self:RegisterSpell(spellInfo)
 
 					if (spellInfo.isPassive) then
 						table.insert(passiveSpells, spellInfo)
@@ -318,11 +366,7 @@ class "CSpellDataService"
 				for s = offset + 1, offset + numSpells do
 					if (not IsSpellHidden(s, BOOKTYPE_SPELL)) then
 						local spellInfo = self:SpellInfoFromSpellBookItem(tabName, s)
-
-						local lookupString = spellInfo.spellName.. spellInfo.spellRank
-						if (ModernSpellBook_DB.knownSpells[lookupString] == nil) then
-							ModernSpellBook_DB.knownSpells[lookupString] = self:BuildSpellLookupTable(spellInfo).. string.lower(self:CreateLookup(NEW))
-						end
+						self:RegisterSpell(spellInfo)
 
 						if (spellInfo.isPassive) then
 							table.insert(passiveSpellsDict[tabName], spellInfo)
@@ -343,7 +387,7 @@ class "CSpellDataService"
 				end
 			end
 			for tabName, spells in pairs(allSpellsDict) do
-				table.sort(spells, function(a, b) return a.spellName < b.spellName end)
+				self:SortSpells(spells)
 			end
 			if (allSpellsDict[GENERAL]) then
 				local profSpells = {}
@@ -372,14 +416,12 @@ class "CSpellDataService"
 		end
 
 		-- Merge talents with spells
-		-- Collect existing category keys first to avoid modifying tables during iteration
 		local existingCategories = {}
 		for cat, _ in pairs(allSpellsDict) do
 			table.insert(existingCategories, cat)
 		end
 
 		local talentGridPositions = TalentService:GetAllTalents(true)
-		-- Collect talent keys to avoid pairs iteration issues
 		local talentKeys = {}
 		for k, _ in pairs(talentGridPositions) do
 			table.insert(talentKeys, k)
@@ -387,7 +429,6 @@ class "CSpellDataService"
 		for _, origTalentGroupName in ipairs(talentKeys) do
 			local talents = talentGridPositions[origTalentGroupName]
 			local talentGroupName = origTalentGroupName
-			-- Try to match talent tab name to an existing spell category (fuzzy match)
 			if (allSpellsDict[talentGroupName] == nil) then
 				local matched = false
 				for _, knownGroup in ipairs(existingCategories) do
@@ -425,7 +466,7 @@ class "CSpellDataService"
 			end
 
 			if (canShowPassives) then
-				table.sort(passiveSpells, function(a, b) return a.spellName < b.spellName end)
+				self:SortSpells(passiveSpells)
 			end
 
 			for i = 1, table.getn(passiveSpells) do
@@ -445,7 +486,7 @@ class "CSpellDataService"
 		end
 
 		for tabName, spells in pairs(allSpellsDict) do
-			table.sort(spells, function(a, b) return a.spellName < b.spellName end)
+			self:SortSpells(spells)
 		end
 
 		self:MergeUnlearnedSpells(allSpellsDict, false)
@@ -488,7 +529,6 @@ class "CSpellDataService"
 	end;
 
 	SetupInitiallyKnownSpells = function(self)
-		ModernSpellBook_DB.knownSpells = {}
 		ShowPassiveSpellsCheckBox:SetChecked(true)
 
 		local allInitialSpells = {}
@@ -496,12 +536,14 @@ class "CSpellDataService"
 		table.insert(allInitialSpells, self:GetPlayerSpells(true))
 		table.insert(allInitialSpells, self:GetPetSpells())
 
+		-- Mark all as seen (not new on first load)
 		for i = 1, 3 do
 			for cat, spellList in pairs(allInitialSpells[i]) do
 				for _, spellInfo in ipairs(spellList) do
-					local lookupString = spellInfo.spellName.. spellInfo.spellRank
-					if (ModernSpellBook_DB.knownSpells[lookupString]) then
-						ModernSpellBook_DB.knownSpells[lookupString] = string.gsub(ModernSpellBook_DB.knownSpells[lookupString], MSB_NEW_KEYWORD, "")
+					local key = MSB_SpellKey(spellInfo.spellName, spellInfo.spellRank)
+					local entry = ModernSpellBook_DB.spells[key]
+					if (entry) then
+						entry.seen_new = true
 					end
 				end
 			end
@@ -573,11 +615,9 @@ class "CSpellDataService"
 			end
 		end
 
-		local _, englishClass = UnitClass("player")
-		local hasTrainerData = ModernSpellBook_DB.trainerSpells and ModernSpellBook_DB.trainerSpells[englishClass]
-		if (hasTrainerData and unlearned > 0) then
+		if (ModernSpellBook_DB.trainerScanned and unlearned > 0) then
 			ModernSpellBookFrame.spellCounter:SetText(learned .. "/" .. (learned + unlearned) .. " learned")
-		elseif (hasTrainerData) then
+		elseif (ModernSpellBook_DB.trainerScanned) then
 			ModernSpellBookFrame.spellCounter:SetText(learned .. " learned")
 		else
 			ModernSpellBookFrame.spellCounter:SetText(learned .. "/? learned")

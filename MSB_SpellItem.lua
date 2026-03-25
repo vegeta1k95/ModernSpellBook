@@ -177,7 +177,7 @@ class "CSpellItem"
 		end)
 	end;
 
-	SetTooltipHandler = function(self, spellInfo, lookupString, isNew)
+	SetTooltipHandler = function(self, spellInfo, spellKey, isNew)
 		local spellIcon = self.spellIcon
 		local frame = self.frame
 		frame:SetScript("OnEnter", function()
@@ -186,10 +186,29 @@ class "CSpellItem"
 			-- Dismiss available-to-learn highlight on hover
 			spellIcon:DismissAvailableHighlight(spellInfo)
 
-			-- Dismiss new-spell highlight on hover
+			-- Dismiss new-spell highlight on hover (and all lower ranks)
 			if (isNew) then
-				ModernSpellBook_DB.knownSpells[lookupString] = string.gsub(ModernSpellBook_DB.knownSpells[lookupString], MSB_NEW_KEYWORD, "")
+				local entry = ModernSpellBook_DB.spells[spellKey]
+				if (entry) then entry.seen_new = true end
+				-- Mark all lower ranks as seen too
+				local hadOtherRanks = false
+				for key, other in pairs(ModernSpellBook_DB.spells) do
+					if (other.learned and not other.seen_new) then
+						local pipePos = string.find(key, "|", 1, true)
+						if (pipePos) then
+							local name = string.sub(key, 1, pipePos - 1)
+							if (name == spellInfo.spellName) then
+								other.seen_new = true
+								hadOtherRanks = true
+							end
+						end
+					end
+				end
 				isNew = false
+				-- Refresh visible items so lower rank glows dismiss immediately
+				if (hadOtherRanks) then
+					SpellBook:RefreshPageElements()
+				end
 			end
 			spellIcon:DismissNewHighlight()
 
@@ -309,9 +328,9 @@ class "CSpellItem"
 		self:SetTextPosition(spellInfo)
 
 		-- New spell detection
-		local lookupString = spellInfo.spellName .. spellInfo.spellRank
-		local knownSpell = ModernSpellBook_DB.knownSpells[lookupString]
-		local isNew = knownSpell and string.find(knownSpell, MSB_NEW_KEYWORD) ~= nil
+		local spellKey = MSB_SpellKey(spellInfo.spellName, spellInfo.spellRank)
+		local entry = ModernSpellBook_DB.spells[spellKey]
+		local isNew = entry and entry.learned and not entry.seen_new
 
 		self.spellIcon:SetHighlights(spellInfo, isNew)
 
@@ -321,7 +340,7 @@ class "CSpellItem"
 			-80 + currentPageRows * -VERTICAL_SPACING)
 
 		self:SetChatLinkHandler(spellInfo)
-		self:SetTooltipHandler(spellInfo, lookupString, isNew)
+		self:SetTooltipHandler(spellInfo, spellKey, isNew)
 		self:SetCooldownAndDrag(spellInfo)
 
 		self.frame:Show()
