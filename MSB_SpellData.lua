@@ -590,6 +590,68 @@ class "CSpellDataService"
 		end
 	end;
 
+	GetUpcomingSpells = function(self)
+		local playerLevel = UnitLevel("player")
+		local upcoming = {}
+
+		-- Build set of talent-blocked spell names
+		-- (spells whose Rank 1 comes from an unlearned talent)
+		local talentBlocked = {}
+		for t = 1, GetNumTalentTabs() do
+			local talentGroupName = GetTalentTabInfo(t)
+			if (talentGroupName) then
+				for i = 1, GetNumTalents(t) do
+					local nameTalent, _, _, _, currRank = GetTalentInfo(t, i)
+					if (nameTalent and currRank == 0) then
+						talentBlocked[nameTalent] = true
+					end
+				end
+			end
+		end
+
+		-- Find the lowest level_req above player level among eligible spells
+		local nextLevel = nil
+		for key, entry in pairs(ModernSpellBook_DB.spells) do
+			if (not entry.learned and entry.level_req) then
+				local pipePos = string.find(key, "|", 1, true)
+				local name = pipePos and string.sub(key, 1, pipePos - 1)
+				if (name and not talentBlocked[name]) then
+					local lvl = entry.level_req
+					if (lvl > playerLevel) then
+						if (not nextLevel or lvl < nextLevel) then
+							nextLevel = lvl
+						end
+					end
+				end
+			end
+		end
+
+		if (not nextLevel) then return upcoming, nil end
+
+		-- Collect all spells at that level (excluding talent-blocked)
+		for key, entry in pairs(ModernSpellBook_DB.spells) do
+			if (not entry.learned and entry.level_req == nextLevel) then
+				local pipePos = string.find(key, "|", 1, true)
+				if (pipePos) then
+					local name = string.sub(key, 1, pipePos - 1)
+					if (not talentBlocked[name]) then
+						table.insert(upcoming, {
+							name = name,
+							rank = string.sub(key, pipePos + 1),
+							icon = entry.icon,
+							desc = entry.desc,
+						})
+					end
+				end
+			end
+		end
+
+		-- Sort alphabetically
+		table.sort(upcoming, function(a, b) return a.name < b.name end)
+
+		return upcoming, nextLevel
+	end;
+
 	UpdateSpellCounter = function(self)
 		if (not ModernSpellBookFrame.spellCounter) then return end
 		if (not ModernSpellBook_DB.showSpellCounter) then

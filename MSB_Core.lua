@@ -8,7 +8,7 @@ local classColors = {{0.87,0.38,0.21}, {0.96,0.55,0.73}, {0.67,0.83,0.45}, {1.00
 
 local maximumPages = 2
 local spellUpdateRequired = true
-local DB_VERSION = 3
+local DB_VERSION = 4
 
 local windowSettings = {
 	posy = 0,
@@ -83,6 +83,7 @@ class "CSpellBook"
 		if (ModernSpellBook_DB.showSpellCounter == nil) then ModernSpellBook_DB.showSpellCounter = true end
 		if (ModernSpellBook_DB.rememberPage == nil) then ModernSpellBook_DB.rememberPage = true end
 		if (ModernSpellBook_DB.showUnlearned == nil) then ModernSpellBook_DB.showUnlearned = true end
+		if (ModernSpellBook_DB.showUpcoming == nil) then ModernSpellBook_DB.showUpcoming = true end
 		if (not ModernSpellBook_DB.fontSize) then ModernSpellBook_DB.fontSize = 11.5 end
 		if (not ModernSpellBook_DB.highlights) then
 			ModernSpellBook_DB.highlights = { learnedGlow = true, learnedBadge = true, availableGlow = true, availableBadge = true }
@@ -325,6 +326,61 @@ class "CSpellBook"
 		self.frame.spellCounter:SetFont("Fonts\\FRIZQT__.TTF", 10)
 		self.frame.spellCounter:SetTextColor(1, 1, 1)
 
+		-- Upcoming spells row (grows right-to-left from page TOPRIGHT, label centered above)
+		local UPCOMING_ICON_SIZE = 24
+		local UPCOMING_ICON_SPACING = 14
+
+		self.frame.upcomingFrame = CreateFrame("Frame", nil, self.frame)
+		self.frame.upcomingFrame:SetHeight(UPCOMING_ICON_SIZE)
+		self.frame.upcomingFrame:SetWidth(400)
+		self.frame.upcomingFrame:SetPoint("TOPRIGHT", self.frame.backgroundLeft, "TOPRIGHT", -100, -30)
+
+		self.frame.upcomingLabel = self.frame.upcomingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		self.frame.upcomingLabel:SetFont("Fonts\\FRIZQT__.TTF", 10)
+		self.frame.upcomingLabel:SetTextColor(1, 1, 1)
+
+		self.frame.upcomingIcons = {}
+		for i = 1, 10 do
+			local parent = CreateFrame("Button", nil, self.frame.upcomingFrame)
+			parent:SetWidth(UPCOMING_ICON_SIZE)
+			parent:SetHeight(UPCOMING_ICON_SIZE)
+			parent:SetPoint("TOPRIGHT", self.frame.upcomingFrame, "TOPRIGHT", -(i - 1) * (UPCOMING_ICON_SIZE + UPCOMING_ICON_SPACING), 0)
+			parent:Hide()
+
+			local icon = CIcon(parent, UPCOMING_ICON_SIZE)
+			icon:SetBorder("Interface\\AddOns\\ModernSpellBook\\Assets\\spell_border_gray")
+			icon:SetBorderSize(UPCOMING_ICON_SIZE + 4)
+			icon:HideRoundBorder()
+			icon:HideSocket()
+			icon.hover_alpha = 0
+
+			local glowFrame, glowTex = MSB_CreateGlow(parent, UPCOMING_ICON_SIZE + 34, {43/255, 100/255, 255/255}, 1)
+			glowFrame:SetPoint("CENTER", icon.icon, "CENTER", 0, 0)
+			glowFrame:Show()
+			parent.glow = glowFrame
+
+			parent:SetScript("OnEnter", function()
+				if (parent.tipName) then
+					GameTooltip:SetOwner(parent, "ANCHOR_TOP")
+					local text = parent.tipName
+					if (parent.tipRank and parent.tipRank ~= "") then
+						text = text .. " (" .. parent.tipRank .. ")"
+					end
+					GameTooltip:SetText(text, 1, 1, 1)
+					if (parent.tipDesc) then
+						GameTooltip:AddLine(parent.tipDesc, 1, 0.82, 0, true)
+					end
+					GameTooltip:Show()
+				end
+			end)
+			parent:SetScript("OnLeave", function()
+				GameTooltip:Hide()
+			end)
+
+			parent.icon = icon
+			self.frame.upcomingIcons[i] = parent
+		end
+
 		if (SpellBookFrame.SetAttribute) then
 			SpellBookFrame:SetAttribute("UIPanelLayout-defined", true)
 			SpellBookFrame:SetAttribute("UIPanelLayout-enabled", true)
@@ -350,7 +406,7 @@ class "CSpellBook"
 		self.frame.ShowPassiveSpellsCheckBox:SetChecked(ModernSpellBook_DB.showPassives)
 		self.frame.ShowPassiveSpellsCheckBox:SetScript("OnClick", function()
 			PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-			ModernSpellBook_DB.showPassives = this:GetChecked()
+			ModernSpellBook_DB.showPassives = this:GetChecked() and true or false
 			SpellBook:DrawPage()
 		end)
 	end;
@@ -374,7 +430,7 @@ class "CSpellBook"
 
 		ShowAllSpellRanksCheckbox:SetScript("OnClick", function()
 			PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-			ModernSpellBook_DB.showAllRanks = this:GetChecked()
+			ModernSpellBook_DB.showAllRanks = this:GetChecked() and true or false
 			SpellBook:DrawPage()
 		end)
 	end;
@@ -674,6 +730,7 @@ class "CSpellBook"
 
 		self:RefreshPage()
 		SpellDataService:UpdateSpellCounter()
+		self:UpdateUpcomingSpells()
 	end;
 
 	RefreshPageElements = function(self)
@@ -759,6 +816,59 @@ class "CSpellBook"
 			self.frame.otherTabCreated = true
 			self:PositionAllTabs()
 		end
+	end;
+
+	-- ================ UPCOMING SPELLS ============================
+
+	UpdateUpcomingSpells = function(self)
+		-- Hide all icons first
+		for i = 1, 10 do
+			self.frame.upcomingIcons[i]:Hide()
+		end
+		self.frame.upcomingLabel:SetText("")
+
+		if (not ModernSpellBook_DB.showUpcoming) then
+			self.frame.upcomingFrame:Hide()
+			return
+		end
+
+		if (self.frame.selectedTab ~= 1) then
+			self.frame.upcomingFrame:Hide()
+			return
+		end
+
+		if (not ModernSpellBook_DB.trainerScanned) then
+			self.frame.upcomingFrame:Hide()
+			return
+		end
+
+		local upcoming, nextLevel = SpellDataService:GetUpcomingSpells()
+		if (not nextLevel or table.getn(upcoming) == 0) then
+			self.frame.upcomingFrame:Hide()
+			return
+		end
+
+		self.frame.upcomingLabel:SetText("New spells at ".. nextLevel ..":")
+		self.frame.upcomingFrame:Show()
+
+		local count = math.min(table.getn(upcoming), 10)
+		for i = 1, count do
+			local btn = self.frame.upcomingIcons[i]
+			btn.icon:SetIcon(upcoming[i].icon)
+            btn.icon:SetDesaturated(true)
+			btn.icon:SetIconAlpha(0.7)
+			btn.tipName = upcoming[i].name
+			btn.tipRank = upcoming[i].rank
+			btn.tipDesc = upcoming[i].desc
+			btn:Show()
+		end
+
+		-- Center label horizontally above the row of icons
+		local iconSize = self.frame.upcomingIcons[1]:GetWidth()
+		local spacing = 14
+		local rowWidth = count * iconSize + (count - 1) * spacing
+		self.frame.upcomingLabel:ClearAllPoints()
+		self.frame.upcomingLabel:SetPoint("BOTTOM", self.frame.upcomingFrame, "TOPRIGHT", -rowWidth / 2, 6)
 	end;
 
 	-- ================ HIDE OLD SPELLBOOK =========================

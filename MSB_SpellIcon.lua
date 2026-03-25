@@ -120,6 +120,23 @@ class "CIcon"
 		self.border:SetTexture(texture)
 	end;
 
+    SetBorderWidth = function(self, w)
+        self.border_frame:SetWidth(w)
+    end;
+
+    SetBorderHeight = function(self, h)
+        self.border_frame:SetHeight(h)
+    end;
+
+    SetBorderSize = function(self, size)
+        self.border_frame:SetWidth(size)
+        self.border_frame:SetHeight(size)
+    end;
+
+    SetBorderColor = function(self, r, g, b)
+        self.border:SetVertexColor(r, g, b)
+    end;
+
 	SetBorderAlpha = function(self, alpha)
 		self.border:SetAlpha(alpha)
 	end;

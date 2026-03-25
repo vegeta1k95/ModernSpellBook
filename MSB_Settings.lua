@@ -88,6 +88,17 @@ class "CSettingsMenu"
 			end
 			UIDropDownMenu_AddButton(info, level)
 
+			-- Show upcoming spells
+			info = {}
+			info.text = "Show upcoming"
+			info.checked = ModernSpellBook_DB.showUpcoming
+			info.keepShownOnClick = 1
+			info.func = function()
+				ModernSpellBook_DB.showUpcoming = not ModernSpellBook_DB.showUpcoming
+				SpellBook:UpdateUpcomingSpells()
+			end
+			UIDropDownMenu_AddButton(info, level)
+
 			-- Highlights submenu
 			info = {}
 			info.text = "Highlights"

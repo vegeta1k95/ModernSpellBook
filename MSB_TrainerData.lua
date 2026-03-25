@@ -72,6 +72,7 @@ class "CTrainerDataService"
 		numServices = GetNumTrainerServices()
 
 		local currentSpecHeader = GENERAL or "General"
+		local currentSpecIsValid = true
 
 		local generalCategories = {
 			["Defense"] = true,
@@ -113,11 +114,19 @@ class "CTrainerDataService"
 				if (skipSpells[name]) then
 					-- do nothing
 				elseif (not icon or icon == "" or icon == 0) then
+					-- Category header
 					if (generalCategories[name]) then
 						currentSpecHeader = GENERAL or "General"
+						currentSpecIsValid = true
+					elseif (classCategories[name]) then
+						currentSpecHeader = name
+						currentSpecIsValid = true
 					else
 						currentSpecHeader = name
+						currentSpecIsValid = false
 					end
+				elseif (not currentSpecIsValid) then
+					-- Skip spells under non-class categories (e.g. Poisons)
 				else
 					local levelReq = 0
 					if (GetTrainerServiceLevelReq) then
