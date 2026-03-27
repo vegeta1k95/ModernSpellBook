@@ -887,7 +887,14 @@ class "CSpellBook"
 			local childName = child:GetName()
 			if (childName ~= "ModernSpellBookFrame" and childName ~= "SpellBookCloseButton") then
 				child:Hide()
+				if (child.UnregisterAllEvents) then
+					child:UnregisterAllEvents()
+				end
 			end
+		end
+		-- Hide parchment background added by ShaguTweaks "Darkened UI" module
+		if (SpellBookFrame.Material) then
+			SpellBookFrame.Material:Hide()
 		end
 	end;
 
@@ -1015,6 +1022,10 @@ MSB_OriginalSpellBookFrameOnShow = SpellBookFrame_OnShow
 
 SpellBookFrame_OnShow = function()
 	if (ModernSpellBookFrame.isForceLoading) then return end
+	-- Hide ShaguTweaks parchment if it was added after our init
+	if (SpellBookFrame.Material) then
+		SpellBookFrame.Material:Hide()
+	end
 	ModernSpellBookFrame:Show()
 	SpellBookFrame:EnableMouse(false)
 end
