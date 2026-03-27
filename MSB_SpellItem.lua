@@ -153,9 +153,22 @@ class "CSpellItem"
 	SetChatLinkHandler = function(self, spellInfo)
 		self.frame:SetScript("OnMouseDown", function()
 			if (not IsShiftKeyDown()) then return end
-			if (not ChatFrameEditBox or not ChatFrameEditBox:IsVisible()) then return end
-
 			if (spellInfo.isPassive) then return end
+
+			-- Macro edit box: insert plain spell name for /cast
+			if (MacroFrameText and MacroFrameText:IsVisible()) then
+				local macroText
+				if (spellInfo.spellRank and spellInfo.spellRank ~= "") then
+					macroText = spellInfo.spellName .. "(" .. spellInfo.spellRank .. ")"
+				else
+					macroText = spellInfo.spellName
+				end
+				MacroFrameText:Insert(macroText)
+				return
+			end
+
+			-- Chat edit box: insert colored name
+			if (not ChatFrameEditBox or not ChatFrameEditBox:IsVisible()) then return end
 
 			local text
 			if (spellInfo.spellRank and spellInfo.spellRank ~= "") then
