@@ -247,7 +247,7 @@ class "CTalentIcon"
 			self:SetBorderAlpha(1)
 			self:SetSocketAlpha(1)
 			self.rank_text:SetTextColor(1, 1, 1)
-			self.haze_tex:SetAlpha(0.9)
+			self.haze_tex:SetAlpha(1.0)
 			self.hover_alpha = 0.5
 			if (self.is_exceptional) then
 				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-green")
@@ -262,7 +262,7 @@ class "CTalentIcon"
 			self:SetBorderAlpha(1)
 			self:SetSocketAlpha(1)
 			self.rank_text:SetTextColor(1, 1, 1)
-			self.haze_tex:SetAlpha(0.5)
+			self.haze_tex:SetAlpha(0.7)
 			self.hover_alpha = 0.5
 			if (self.is_exceptional) then
 				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-green")
@@ -277,7 +277,7 @@ class "CTalentIcon"
 			self:SetBorderAlpha(1)
 			self:SetSocketAlpha(1)
 			self.rank_text:SetTextColor(1, 1, 1)
-			self.haze_tex:SetAlpha(0.5)
+			self.haze_tex:SetAlpha(0.7)
 			self.hover_alpha = 0.5
 			if (self.is_exceptional) then
 				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-gold")

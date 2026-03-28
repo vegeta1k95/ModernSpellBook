@@ -8,10 +8,6 @@ local TALENT_ASSETS = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\"
 local ARROW_TEXTURES = {
 	v           = TALENT_ASSETS .. "arrow-v",
 	h           = TALENT_ASSETS .. "arrow-h",
-	corner_lb   = TALENT_ASSETS .. "arrow-corner-lb",
-	corner_rb   = TALENT_ASSETS .. "arrow-corner-rb",
-	corner_lt   = TALENT_ASSETS .. "arrow-corner-lt",
-	corner_rt   = TALENT_ASSETS .. "arrow-corner-rt",
 	head_down   = TALENT_ASSETS .. "arrowhead-down",
 	head_left   = TALENT_ASSETS .. "arrowhead-left",
 	head_right  = TALENT_ASSETS .. "arrowhead-right",
@@ -103,7 +99,6 @@ class "CTalentConnection"
 		local dst_cy = offset_y + dst_row * cell_size + cell_size / 2
 
 		local arrow_width = 4
-		local corner_size = 8
 		local head_size = 10
 		local icon_radius = 15 -- half of icon, avoid overlapping
 
@@ -130,47 +125,109 @@ class "CTalentConnection"
 			self:AddVerticalSegment(src_cx, src_cy + icon_radius, dst_cy - icon_radius - head_size, arrow_width)
 			self:AddArrowhead("head_down", dst_cx, dst_cy - icon_radius - head_size, head_size)
 		elseif (dst_row > src_row) then
-			-- L-shape: try down-then-horizontal first
-			local mid_y = offset_y + dst_row * cell_size + cell_size / 2
+			local going_right = dst_col > src_col
+
+			-- Helper: is cell blocked? (occupied by talent other than src/dst)
+			local function isBlocked(r, c)
+				if (r == src_row and c == src_col) then return false end
+				if (r == dst_row and c == dst_col) then return false end
+				return occupied and occupied[r .. "," .. c]
+			end
 
 			-- Check if down-then-horizontal is blocked
-			local down_blocked = false
-			if (occupied) then
-				for r = src_row + 1, dst_row - 1 do
-					if (occupied[r .. "," .. src_col]) then
-						down_blocked = true
+			-- Path: (src_row,src_col) -> down to (dst_row,src_col) -> right/left to (dst_row,dst_col)
+			local down_first_blocked = false
+			-- Vertical: all rows from src+1 to dst at src_col (including turn point at dst_row)
+			for r = src_row + 1, dst_row do
+				if (isBlocked(r, src_col)) then
+					down_first_blocked = true
+					break
+				end
+			end
+			-- Horizontal: all cols between src_col and dst_col at dst_row
+			if (not down_first_blocked) then
+				local mn = math.min(src_col, dst_col)
+				local mx = math.max(src_col, dst_col)
+				for c = mn + 1, mx - 1 do
+					if (isBlocked(dst_row, c)) then
+						down_first_blocked = true
 						break
 					end
 				end
 			end
 
-			if (not down_blocked and src_col ~= dst_col) then
-				-- Down from src to dst row, then horizontal to dst
-				local turn_y = mid_y
+			-- Check if horizontal-then-down is blocked
+			-- Path: (src_row,src_col) -> right/left to (src_row,dst_col) -> down to (dst_row,dst_col)
+			local horiz_first_blocked = false
+			-- Horizontal: all cols between src_col and dst_col at src_row (including turn point)
+			local mn = math.min(src_col, dst_col)
+			local mx = math.max(src_col, dst_col)
+			for c = mn + 1, mx do
+				if (isBlocked(src_row, c)) then
+					horiz_first_blocked = true
+					break
+				end
+			end
+			-- Vertical: all rows from src+1 to dst-1 at dst_col
+			if (not horiz_first_blocked) then
+				for r = src_row + 1, dst_row - 1 do
+					if (isBlocked(r, dst_col)) then
+						horiz_first_blocked = true
+						break
+					end
+				end
+			end
 
-				-- Vertical segment: from src bottom to turn point
+			-- Pick the unblocked option (prefer down-first)
+			local use_down_first = not down_first_blocked
+			if (down_first_blocked and not horiz_first_blocked) then
+				use_down_first = false
+			elseif (down_first_blocked and horiz_first_blocked) then
+				-- Both blocked, try down-first anyway (some visual is better than none)
+				use_down_first = true
+			end
+
+			if (use_down_first) then
+				-- Down from src to dst row, then horizontal to dst
+				local turn_y = offset_y + dst_row * cell_size + cell_size / 2
+
 				self:AddVerticalSegment(src_cx, src_cy + icon_radius, turn_y, arrow_width)
 
-				-- Corner at turn point
-				local going_right = dst_col > src_col
 				if (going_right) then
-					self:AddCorner("corner_lb", src_cx, turn_y, corner_size)
-					-- Horizontal segment: from corner right edge to arrowhead
-					local h_start = src_cx + corner_size / 2
+					local h_start = src_cx
 					local h_end = dst_cx - icon_radius - head_size
 					if (h_end > h_start) then
 						self:AddHorizontalSegment(h_start, turn_y, h_end - h_start, arrow_width)
 					end
 					self:AddArrowhead("head_right", dst_cx - icon_radius - head_size, dst_cy, head_size)
 				else
-					self:AddCorner("corner_rb", src_cx, turn_y, corner_size)
 					local h_start = dst_cx + icon_radius + head_size
-					local h_end = src_cx - corner_size / 2
+					local h_end = src_cx
 					if (h_end > h_start) then
 						self:AddHorizontalSegment(h_start, turn_y, h_end - h_start, arrow_width)
 					end
 					self:AddArrowhead("head_left", dst_cx + icon_radius + head_size, dst_cy, head_size)
 				end
+			else
+				-- Horizontal from src to dst col, then down to dst
+				local turn_x = dst_cx
+
+				if (going_right) then
+					local h_start = src_cx + icon_radius
+					local h_end = turn_x
+					if (h_end > h_start) then
+						self:AddHorizontalSegment(h_start, src_cy, h_end - h_start, arrow_width)
+					end
+				else
+					local h_start = turn_x
+					local h_end = src_cx - icon_radius
+					if (h_end > h_start) then
+						self:AddHorizontalSegment(h_start, src_cy, h_end - h_start, arrow_width)
+					end
+				end
+
+				self:AddVerticalSegment(turn_x, src_cy, dst_cy - icon_radius - head_size, arrow_width)
+				self:AddArrowhead("head_down", dst_cx, dst_cy - icon_radius - head_size, head_size)
 			end
 		end
 	end;
@@ -189,21 +246,6 @@ class "CTalentConnection"
 		self.arrow_count = self.arrow_count + 1
 		local arrow = self:GetArrow(self.arrow_count)
 		arrow:SetSegment("h", left_x, cy - height / 2, seg_width, height)
-	end;
-
-	AddCorner = function(self, corner_type, cx, cy, size)
-		self.arrow_count = self.arrow_count + 1
-		local arrow = self:GetArrow(self.arrow_count)
-		local half = size / 2
-		if (corner_type == "corner_rt") then
-			arrow:SetSegment(corner_type, cx - half, cy - half, size, size)
-		elseif (corner_type == "corner_lt") then
-			arrow:SetSegment(corner_type, cx - half, cy - half, size, size)
-		elseif (corner_type == "corner_rb") then
-			arrow:SetSegment(corner_type, cx - half, cy - half, size, size)
-		elseif (corner_type == "corner_lb") then
-			arrow:SetSegment(corner_type, cx - half, cy - half, size, size)
-		end
 	end;
 
 	AddArrowhead = function(self, head_type, x, y, size)

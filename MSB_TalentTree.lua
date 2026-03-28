@@ -21,15 +21,15 @@ local VERT_OFFSET = (TOTAL_HEIGHT - PANEL_HEIGHT) / 2
 
 -- Indexed by english class name then specIndex (1-3)
 local SPEC_HAZE_COLORS = {
-	WARRIOR = {{0.959, 0.959, 0.967}, {1.0, 0.458, 0.010}, {0.208, 0.543, 0.835}},  -- Arms, Fury, Protection
-	PALADIN = {{0.994, 0.914, 0.076}, {0.365, 0.580, 1.0}, {0.563, 0.255, 0.902}},  -- Holy, Protection, Retribution
-	HUNTER  = {{0.441, 0.845, 0.249}, {0.110, 0.600, 0.800}, {0.996, 0.796, 0.196}},  -- Beast Mastery, Marksmanship, Survival
-	ROGUE   = {{0.288, 1.0, 0.237}, {0.886, 0.382, 0.371}, {0.547, 0.657, 1.0}},  -- Assassination, Combat, Subtlety
-	PRIEST  = {{1.0, 1.0, 1.0}, {0.949, 0.976, 0.235}, {0.537, 0.322, 1.000}},  -- Discipline, Holy, Shadow
-	SHAMAN  = {{0.416, 0.569, 1.0}, {1.0, 0.534, 0.150}, {0.414, 1.0, 0.471}},  -- Elemental, Enhancement, Restoration
-	MAGE    = {{0.853, 0.545, 1.0}, {1.0, 0.620, 0.069}, {0.035, 0.580, 1.0}},  -- Arcane, Fire, Frost
-	WARLOCK = {{0.306, 0.925, 0.153}, {0.925, 0.608, 0.978}, {0.914, 0.347, 0.173}},  -- Affliction, Demonology, Destruction
-	DRUID   = {{0.767, 0.508, 0.857}, {0.110, 0.878, 0.922}, {0.249, 0.996, 0.288}},  -- Balance, Feral Combat, Restoration
+	WARRIOR = {{0.000, 0.800, 1.000}, {1.000, 0.600, 0.000}, {1.000, 0.240, 0.000}},  -- Arms, Fury, Protection
+	PALADIN = {{1.000, 1.000, 0.000}, {1.000, 0.230, 0.000}, {0.000, 0.800, 1.000}},  -- Holy, Protection, Retribution
+	HUNTER  = {{0.000, 0.500, 1.000}, {1.000, 1.000, 0.000}, {1.000, 0.300, 0.000}},  -- Beast Mastery, Marksmanship, Survival
+	ROGUE   = {{0.400, 1.000, 0.000}, {0.000, 0.800, 1.000}, {0.540, 0.000, 1.000}},  -- Assassination, Combat, Subtlety
+	PRIEST  = {{0.000, 0.750, 1.000}, {1.000, 1.000, 0.000}, {0.637, 0.000, 1.000}},  -- Discipline, Holy, Shadow
+	SHAMAN  = {{1.000, 0.500, 0.000}, {0.300, 0.170, 1.000}, {0.000, 1.000, 0.600}},  -- Elemental, Enhancement, Restoration
+	MAGE    = {{0.850, 0.545, 1.000}, {1.000, 0.350, 0.000}, {0.000, 0.350, 1.000}},  -- Arcane, Fire, Frost
+	WARLOCK = {{0.620, 0.420, 1.000}, {0.860, 0.170, 0.110}, {1.000, 0.700, 0.000}},  -- Affliction, Demonology, Destruction
+	DRUID   = {{0.350, 0.000, 1.000}, {1.000, 0.100, 0.150}, {0.000, 1.000, 0.000}},  -- Balance, Feral Combat, Restoration
 }
 local DEFAULT_HAZE_COLOR = {0.2, 0.2, 0.4}
 
