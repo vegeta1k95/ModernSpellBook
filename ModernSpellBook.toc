@@ -4,7 +4,7 @@
 ## Notes-frFR: Modifie le livre de sorts pour un look plus moderne inspiré de la version commerciale.
 ## Notes-deDE: Ändert das Zauberbuch zu einem moderneren Aussehen, inspiriert von der Einzelhandelsversion.
 ## Notes-esES: Cambia el libro de hechizos a un aspecto más moderno inspirado en la versión comercial.
-## Version: 1.5.3-TW
+## Version: 1.5.4-TW
 ## DefaultState: enabled
 
 ## SavedVariablesPerCharacter: ModernSpellBook_DB
@@ -25,6 +25,9 @@ MSB_SpellFrame.lua
 MSB_Stances.lua
 MSB_TrainerData.lua
 MSB_Talents.lua
+MSB_TalentIcon.lua
+MSB_TalentArrow.lua
+MSB_TalentTree.lua
 MSB_Tabs.lua
 MSB_SlashCommands.lua
 MSB_Debug.lua

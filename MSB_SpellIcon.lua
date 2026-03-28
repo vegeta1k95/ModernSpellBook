@@ -201,6 +201,11 @@ class "CIcon"
 			self.icon:SetVertexColor(1, 1, 1)
 		end
 	end;
+
+    SetDesaturatedBorder = function(self, desaturated)
+    	self.border:SetDesaturated(desaturated)
+        self.round_border:SetDesaturated(desaturated)
+	end;
 }
 
 --==============================================================================
