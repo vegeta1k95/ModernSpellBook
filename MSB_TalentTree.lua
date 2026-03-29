@@ -19,7 +19,7 @@ local TOTAL_WIDTH = 3 * PANEL_WIDTH + 4 * PANEL_PADDING + 20
 local TOTAL_HEIGHT = PANEL_HEIGHT + 120
 local VERT_OFFSET = (TOTAL_HEIGHT - PANEL_HEIGHT) / 2
 
-local EXPANDED_HORIZONTAL_PADDING = 250
+local EXPANDED_HORIZONTAL_PADDING = 350
 
 local TALENT_ASSETS = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\"
 
@@ -232,18 +232,40 @@ class "CTalentTree"
 			panel:SetBackdropColor(0.06, 0.06, 0.1, 0.9)
 
 
-			-- Spec background texture (right-cropped to fit panel)
-			local bgPath = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\Backgrounds\\talentbg-" .. string.lower(englishClass) .. "-" .. t
-			local bgTex = panel:CreateTexture(nil, "ARTWORK")
-			bgTex:SetPoint("TOPLEFT", panel, "TOPLEFT", 4, -4)
-			bgTex:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -4, 4)
-			bgTex:SetTexture(bgPath)
-            bgTex:SetAlpha(0.6)
-			-- Texture is 1024x512 (2:1). Scale to fit panel height, crop left.
+			-- Spec background texture (two 512x512 halves, right-cropped to fit panel)
+			local bgBase = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\Backgrounds\\talentbg-" .. string.lower(englishClass) .. "-" .. t
+			-- Original image is 1024x512 (2:1). Scale to fit panel height, crop left.
 			local scaledWidth = PANEL_HEIGHT * 2
 			local visibleFraction = PANEL_WIDTH / scaledWidth
 			local leftCrop = 1 - visibleFraction
-			bgTex:SetTexCoord(leftCrop, 1, 0, 1)
+			-- leftCrop is in 0..1 of the full 1024 image
+			-- Left half covers 0..0.5, right half covers 0.5..1.0
+			local bgTexLeft = panel:CreateTexture(nil, "ARTWORK")
+			local bgTexRight = panel:CreateTexture(nil, "ARTWORK")
+			bgTexLeft:SetTexture(bgBase .. "-left")
+			bgTexRight:SetTexture(bgBase .. "-right")
+			bgTexLeft:SetAlpha(0.6)
+			bgTexRight:SetAlpha(0.6)
+			if (leftCrop >= 0.5) then
+				-- Entire visible area is in the right half
+				local rightStart = (leftCrop - 0.5) * 2
+				bgTexRight:SetPoint("TOPLEFT", panel, "TOPLEFT", 4, -4)
+				bgTexRight:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -4, 4)
+				bgTexRight:SetTexCoord(rightStart, 1, 0, 1)
+				bgTexLeft:Hide()
+			else
+				-- Visible area spans both halves
+				local leftStart = leftCrop * 2
+				local leftVisibleFrac = (0.5 - leftCrop) / (1 - leftCrop)
+				local splitX = PANEL_WIDTH * leftVisibleFrac
+				bgTexLeft:SetPoint("TOPLEFT", panel, "TOPLEFT", 4, -4)
+				bgTexLeft:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 4, 4)
+				bgTexLeft:SetWidth(splitX)
+				bgTexLeft:SetTexCoord(leftStart, 1, 0, 1)
+				bgTexRight:SetPoint("TOPLEFT", bgTexLeft, "TOPRIGHT", 0, 0)
+				bgTexRight:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -4, 4)
+				bgTexRight:SetTexCoord(0, 1, 0, 1)
+			end
 
 
 			-- Spec header
@@ -417,15 +439,22 @@ class "CTalentTree"
 			region:Hide()
 		end
 
-		local expW = self.expanded:GetWidth()
-		local expH = self.expanded:GetHeight()
+		local expW = TOTAL_WIDTH - 16
+		local expH = TOTAL_HEIGHT - 16
 
-		-- Full background
-		local bgPath = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\Backgrounds\\talentbg-" .. string.lower(englishClass) .. "-" .. specIndex
-		local bg = self.expanded:CreateTexture(nil, "ARTWORK")
-		bg:SetAllPoints(self.expanded)
-		bg:SetTexture(bgPath)
-		bg:Show()
+		-- Full background (two 512x512 halves stitched together)
+		local bgBase = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\Backgrounds\\talentbg-" .. string.lower(englishClass) .. "-" .. specIndex
+		local bgLeft = self.expanded:CreateTexture(nil, "ARTWORK")
+		bgLeft:SetTexture(bgBase .. "-left")
+		bgLeft:SetPoint("TOPLEFT", self.expanded, "TOPLEFT", 0, 0)
+		bgLeft:SetPoint("BOTTOMLEFT", self.expanded, "BOTTOMLEFT", 0, 0)
+		bgLeft:SetWidth(expW / 2)
+		bgLeft:Show()
+		local bgRight = self.expanded:CreateTexture(nil, "ARTWORK")
+		bgRight:SetTexture(bgBase .. "-right")
+		bgRight:SetPoint("TOPLEFT", bgLeft, "TOPRIGHT", 0, 0)
+		bgRight:SetPoint("BOTTOMRIGHT", self.expanded, "BOTTOMRIGHT", 0, 0)
+		bgRight:Show()
 
 		-- Right-click background to go back
 		self.expanded:EnableMouse(true)
@@ -435,13 +464,14 @@ class "CTalentTree"
 			end
 		end)
 
-		-- Left column container (from left edge to where the grid starts)
+		-- Symmetric layout: left column centered on X=PAD, grid centered on X=expW-PAD
 		local gridW = GRID_COLS_DEFAULT * CELL_SIZE + 20
-		local leftColW = expW - gridW - EXPANDED_HORIZONTAL_PADDING
+		local leftColW = EXPANDED_HORIZONTAL_PADDING * 2
+
 		local leftCol = CreateFrame("Frame", nil, self.expanded)
 		leftCol:SetWidth(leftColW)
 		leftCol:SetHeight(expH)
-		leftCol:SetPoint("TOPLEFT", self.expanded, "TOPLEFT", EXPANDED_HORIZONTAL_PADDING-70, 0)
+		leftCol:SetPoint("CENTER", self.expanded, "LEFT", EXPANDED_HORIZONTAL_PADDING, 0)
 
 		-- Spec name (centered at top)
 		local specName = leftCol:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -461,7 +491,8 @@ class "CTalentTree"
 		specDesc:SetText(descText)
 		specDesc:SetTextColor(1, 1, 1)
 		specDesc:SetJustifyH("CENTER")
-		specDesc:SetWidth(leftColW - 40)
+		specDesc:SetWidth(400)
+		--specDesc:SetWidth(leftColW - 40)
 		if (specDesc.SetWordWrap) then specDesc:SetWordWrap(true) end
 		specDesc:Show()
 
@@ -499,6 +530,16 @@ class "CTalentTree"
 					if (score > pickScore) then
 						pick = talent
 						pickScore = score
+					end
+				end
+			end
+			-- Fallback: if no exceptional talent in this row, pick the one with smallest max rank
+			if (not pick) then
+				local bestRank = 999
+				for _, talent in ipairs(spec.icons) do
+					if (talent.tier == targetRow and talent.max_rank < bestRank) then
+						bestRank = talent.max_rank
+						pick = talent
 					end
 				end
 			end
@@ -579,7 +620,7 @@ class "CTalentTree"
 		local gridContainer = CreateFrame("Frame", nil, self.expanded)
 		gridContainer:SetWidth(gridW)
 		gridContainer:SetHeight(gridH)
-		gridContainer:SetPoint("RIGHT", self.expanded, "RIGHT", -EXPANDED_HORIZONTAL_PADDING, 0)
+		gridContainer:SetPoint("CENTER", self.expanded, "RIGHT", -EXPANDED_HORIZONTAL_PADDING, 0)
 
 		-- Align points title above grid, then align spec name to same vertical position
 		pointsTitle:SetPoint("TOP", gridContainer, "TOP", 0, 30)

@@ -112,7 +112,7 @@ class "CTalentIcon"
 		self.column = column
 		self.curr_rank = currRank
 		self.max_rank = maxRank
-		self.is_exceptional = (isExceptional and isExceptional == 1)
+		self.is_exceptional = (isExceptional and isExceptional == 1) or (tier == 7)
 		self.icon_texture = iconTexture
 
 		-- Icon shape: exceptional → square + bigger, normal → circular mask
