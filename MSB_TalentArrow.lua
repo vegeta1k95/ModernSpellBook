@@ -91,6 +91,7 @@ class "CTalentConnection"
 
 	BuildRoute = function(self, src_row, src_col, dst_row, dst_col, cell_size, offset_x, offset_y, occupied)
 		self:Clear()
+		self.routed_cells = {}
 
 		-- Center coordinates of source and destination cells
 		local src_cx = offset_x + src_col * cell_size + cell_size / 2
@@ -120,10 +121,20 @@ class "CTalentConnection"
 				end
 				self:AddArrowhead("head_left", dst_cx + icon_radius + head_size, dst_cy, head_size)
 			end
+			-- Record horizontal cells
+			local cmn = math.min(src_col, dst_col)
+			local cmx = math.max(src_col, dst_col)
+			for c = cmn + 1, cmx - 1 do
+				table.insert(self.routed_cells, {r = src_row, c = c})
+			end
 		elseif (src_col == dst_col) then
 			-- Straight vertical
 			self:AddVerticalSegment(src_cx, src_cy + icon_radius, dst_cy - icon_radius - head_size, arrow_width)
 			self:AddArrowhead("head_down", dst_cx, dst_cy - icon_radius - head_size, head_size)
+			-- Record vertical cells
+			for r = src_row + 1, dst_row - 1 do
+				table.insert(self.routed_cells, {r = r, c = src_col})
+			end
 		elseif (dst_row > src_row) then
 			local going_right = dst_col > src_col
 
@@ -208,6 +219,15 @@ class "CTalentConnection"
 					end
 					self:AddArrowhead("head_left", dst_cx + icon_radius + head_size, dst_cy, head_size)
 				end
+				-- Record routed cells (vertical + horizontal)
+				for r = src_row + 1, dst_row do
+					table.insert(self.routed_cells, {r = r, c = src_col})
+				end
+				local cmn = math.min(src_col, dst_col)
+				local cmx = math.max(src_col, dst_col)
+				for c = cmn + 1, cmx - 1 do
+					table.insert(self.routed_cells, {r = dst_row, c = c})
+				end
 			else
 				-- Horizontal from src to dst col, then down to dst
 				local turn_x = dst_cx
@@ -228,6 +248,15 @@ class "CTalentConnection"
 
 				self:AddVerticalSegment(turn_x, src_cy, dst_cy - icon_radius - head_size, arrow_width)
 				self:AddArrowhead("head_down", dst_cx, dst_cy - icon_radius - head_size, head_size)
+				-- Record routed cells (horizontal + vertical)
+				local cmn = math.min(src_col, dst_col)
+				local cmx = math.max(src_col, dst_col)
+				for c = cmn + 1, cmx do
+					table.insert(self.routed_cells, {r = src_row, c = c})
+				end
+				for r = src_row + 1, dst_row - 1 do
+					table.insert(self.routed_cells, {r = r, c = dst_col})
+				end
 			end
 		end
 	end;

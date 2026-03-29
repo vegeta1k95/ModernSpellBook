@@ -38,13 +38,13 @@ class "CCategoryItem"
 		self.text:SetFont("Fonts\\FRIZQT__.TTF", 17)
 
 		self.lightBorder = self.frame:CreateTexture(nil, "OVERLAY")
-		self.lightBorder:SetWidth(500)
-		self.lightBorder:SetHeight(90)
-		self.lightBorder:SetPoint("TOPLEFT", self.frame, "TOPLEFT", -170, 35)
-		self.lightBorder:SetTexture("Interface\\Glues\\Models\\UI_Tauren\\gradientcircle")
+		self.lightBorder:SetWidth(256)
+		self.lightBorder:SetHeight(44)
+		self.lightBorder:SetPoint("LEFT", self.specIconFrame, "LEFT", -10, 0)
+		self.lightBorder:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-section-highlight")
 		self.lightBorder:SetBlendMode("ADD")
 		self.lightBorder:SetDrawLayer("OVERLAY", -2)
-		self.lightBorder:SetAlpha(0.15)
+		self.lightBorder:SetAlpha(0.4)
 
 		self.separator = self.frame:CreateTexture(nil, "OVERLAY")
 		self.separator:SetWidth(400)

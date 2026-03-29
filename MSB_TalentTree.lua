@@ -96,6 +96,7 @@ class "CTalentTree"
 
 		self.specs = {}
 		self.built = false
+
 	end;
 
 	-- ======================== TOGGLE =============================
@@ -128,11 +129,14 @@ class "CTalentTree"
 			local numTalents = GetNumTalents(t)
 
 			-- Spec panel container
+			-- Anchor by CENTER so SetScale scales from center naturally
+			local centerX = FRAME_PAD + (t - 1) * (PANEL_WIDTH + PANEL_PADDING) + PANEL_WIDTH / 2
+			local centerY = -VERT_OFFSET - PANEL_HEIGHT / 2
+
 			local panel = CreateFrame("Frame", nil, self.frame)
 			panel:SetWidth(PANEL_WIDTH)
 			panel:SetHeight(PANEL_HEIGHT)
-			panel:SetPoint("TOPLEFT", self.frame, "TOPLEFT",
-				FRAME_PAD + (t - 1) * (PANEL_WIDTH + PANEL_PADDING), -VERT_OFFSET)
+			panel:SetPoint("CENTER", self.frame, "TOPLEFT", centerX, centerY)
 			panel:SetBackdrop({
 				bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 				edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -140,6 +144,7 @@ class "CTalentTree"
 				insets = { left = 3, right = 3, top = 3, bottom = 3 }
 			})
 			panel:SetBackdropColor(0.06, 0.06, 0.1, 0.9)
+
 
 			-- Spec background texture (right-cropped to fit panel)
 			local _, englishClass = UnitClass("player")
@@ -167,7 +172,11 @@ class "CTalentTree"
 			local ptsText = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 			ptsText:SetPoint("TOP", header, "BOTTOM", 0, -4)
 			ptsText:SetFont("Fonts\\FRIZQT__.TTF", 12)
-			ptsText:SetTextColor(0.6, 0.6, 0.6)
+            if (pointsSpent == 0) then
+			    ptsText:SetTextColor(0.6, 0.6, 0.6)
+            else
+                ptsText:SetTextColor(1.0, 1.0, 1.0)
+            end
 
 			-- Tier lock icon (shown at first locked tier, updated in Refresh)
 			local tierLock = CreateFrame("Frame", nil, panel)
@@ -207,33 +216,62 @@ class "CTalentTree"
 				end
 			end
 
+			-- Mark the bottom-most talent as final (fancy frame)
+			local maxTier = 0
+			for _, talent in ipairs(icons) do
+				if (talent.tier > maxTier) then maxTier = talent.tier end
+			end
+			for _, talent in ipairs(icons) do
+				if (talent.tier == maxTier) then
+					talent.is_final = true
+					talent:ApplyFrameShape()
+				end
+			end
+
 			-- Build occupied cell map for routing
 			local occupied = {}
 			for _, talent in ipairs(icons) do
 				occupied[(talent.tier - 1) .. "," .. (talent.column - 1)] = true
 			end
 
-			-- Build prereq connections
-			local connections = {}
+			-- Collect prereq edges, sorted: straight (same col) first, then L-shapes
+			local edges = {}
 			for _, talent in ipairs(icons) do
 				if (talent.prereq_tier and talent.prereq_column) then
-					local conn = CTalentConnection(panel)
-					conn:BuildRoute(
-						talent.prereq_tier - 1,
-						talent.prereq_column - 1,
-						talent.tier - 1,
-						talent.column - 1,
-						CELL_SIZE,
-						PANEL_INNER_PAD + col_offset,
-						HEADER_HEIGHT + GRID_VERT_PAD,
-						occupied)
-					table.insert(connections, {
-						connection = conn,
-						prereq_tier = talent.prereq_tier,
-						prereq_column = talent.prereq_column,
-						target = talent,
-					})
+					table.insert(edges, talent)
 				end
+			end
+			table.sort(edges, function(a, b)
+				local a_straight = (a.prereq_column == a.column) and 0 or 1
+				local b_straight = (b.prereq_column == b.column) and 0 or 1
+				return a_straight < b_straight
+			end)
+
+			-- Build connections: straight first so L-shapes can avoid them
+			local connections = {}
+			for _, talent in ipairs(edges) do
+				local conn = CTalentConnection(panel)
+				conn:BuildRoute(
+					talent.prereq_tier - 1,
+					talent.prereq_column - 1,
+					talent.tier - 1,
+					talent.column - 1,
+					CELL_SIZE,
+					PANEL_INNER_PAD + col_offset,
+					HEADER_HEIGHT + GRID_VERT_PAD,
+					occupied)
+				-- Add routed cells to occupied so later connections avoid them
+				if (conn.routed_cells) then
+					for _, cell in ipairs(conn.routed_cells) do
+						occupied[cell.r .. "," .. cell.c] = true
+					end
+				end
+				table.insert(connections, {
+					connection = conn,
+					prereq_tier = talent.prereq_tier,
+					prereq_column = talent.prereq_column,
+					target = talent,
+				})
 			end
 
 			table.insert(self.specs, {
@@ -330,3 +368,27 @@ class "CTalentTree"
 }
 
 TalentTree = CTalentTree()
+
+-- ============================================================
+-- Hook default talent window: open our UI instead
+-- ============================================================
+
+if (ToggleTalentFrame) then
+	local orig_ToggleTalentFrame = ToggleTalentFrame
+	ToggleTalentFrame = function()
+		TalentTree:Toggle()
+	end
+else
+	-- Blizzard_TalentUI might not be loaded yet — hook when it loads
+	local hookFrame = CreateFrame("Frame")
+	hookFrame:RegisterEvent("ADDON_LOADED")
+	hookFrame:SetScript("OnEvent", function()
+		if (arg1 == "Blizzard_TalentUI" and ToggleTalentFrame) then
+			local orig = ToggleTalentFrame
+			ToggleTalentFrame = function()
+				TalentTree:Toggle()
+			end
+			hookFrame:UnregisterEvent("ADDON_LOADED")
+		end
+	end)
+end

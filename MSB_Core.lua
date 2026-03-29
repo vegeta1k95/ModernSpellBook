@@ -286,18 +286,18 @@ class "CSpellBook"
 
 		-- Background pages (top anchor positions, bottom anchor = frame bottom, height auto)
 		self.frame.backgroundLeft = self.frame:CreateTexture(nil, "ARTWORK")
-		self.frame.backgroundLeft:SetWidth(550)
+		self.frame.backgroundLeft:SetWidth(512)
 		self.frame.backgroundLeft:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 15, -50)
-		self.frame.backgroundLeft:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", 0, 15)
+		self.frame.backgroundLeft:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", 0, 10)
 		self.frame.backgroundLeft:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-1")
-		self.frame.backgroundLeft:SetTexCoord(1, 0, 0, 1)
+		self.frame.backgroundLeft:SetTexCoord(0, 1, 0, 1)
 
 		self.frame.backgroundRight = self.frame:CreateTexture(nil, "ARTWORK")
-		self.frame.backgroundRight:SetWidth(510)
-		self.frame.backgroundRight:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 535, -50)
-		self.frame.backgroundRight:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -15, 15)
-		self.frame.backgroundRight:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-1")
-		self.frame.backgroundRight:SetTexCoord(0.123, 1, 0, 1)
+		self.frame.backgroundRight:SetWidth(512)
+		self.frame.backgroundRight:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 527, -50)
+		self.frame.backgroundRight:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -15, 10)
+		self.frame.backgroundRight:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-page-2")
+		self.frame.backgroundRight:SetTexCoord(0, 1, 0, 1)
 
 		-- Bookmark
 		self.frame.bookmark = self.frame:CreateTexture(nil, "OVERLAY")
@@ -351,7 +351,6 @@ class "CSpellBook"
 			local icon = CIcon(parent, UPCOMING_ICON_SIZE)
 			icon:SetBorder("Interface\\AddOns\\ModernSpellBook\\Assets\\spell_border_gray")
 			icon:SetBorderSize(UPCOMING_ICON_SIZE + 4)
-			icon:HideRoundBorder()
 			icon:HideSocket()
 			icon.hover_alpha = 0
 

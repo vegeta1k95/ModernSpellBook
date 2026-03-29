@@ -351,8 +351,7 @@ class "CSpellItem"
 
 		self.frame:Show()
 
-		self.spellIcon:SetFancyFrame(spellInfo)
-		self.spellIcon:SetStyle(spellInfo)
+		self.spellIcon:SetSpell(spellInfo)
 		self:SetLearnedState(spellInfo)
 	end;
 }

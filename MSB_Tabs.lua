@@ -67,11 +67,7 @@ class "CTab"
 		self.frame:ClearAllPoints()
 
 		if (self.tab_number == 1) then
-			if (isMainFrameMinimized) then
-				self.frame:SetPoint("BOTTOMLEFT", ModernSpellBookFrame, "BOTTOMLEFT", 20, -41)
-			else
-				self.frame:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 50, -10)
-			end
+			self.frame:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 80, -8)
 		else
 			-- Find previous visible tab to anchor to
 			local anchor = nil
@@ -85,11 +81,7 @@ class "CTab"
 			if (anchor) then
 				self.frame:SetPoint("TOPLEFT", anchor.frame, "TOPRIGHT", -13, 0)
 			else
-				if (isMainFrameMinimized) then
-					self.frame:SetPoint("BOTTOMLEFT", ModernSpellBookFrame, "BOTTOMLEFT", 20, -41)
-				else
-					self.frame:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 50, -10)
-				end
+				self.frame:SetPoint("TOPLEFT", ModernSpellBookFrame, "TOPLEFT", 80, -8)
 			end
 		end
 	end;

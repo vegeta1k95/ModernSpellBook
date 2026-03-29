@@ -8,6 +8,7 @@
 	  Normal      → round frame + circular icon mask
 --]]
 
+local ASSETS = "Interface\\AddOns\\ModernSpellBook\\Assets\\"
 local TALENT_ASSETS = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\"
 local TALENT_ICON_SIZE = 30
 local TALENT_ICON_SIZE_EXCEPTIONAL = 34
@@ -28,7 +29,6 @@ class "CTalentIcon"
 		-- Default to square frame
 		self:SetBorder(TALENT_ASSETS .. "talent-frame-square")
 		self:SetBorderSize(TALENT_ICON_SIZE + 3.3)
-		self:HideRoundBorder()
 		self:HideCooldown()
 
 		-- Haze glow behind the icon (spec-colored, below everything)
@@ -57,6 +57,7 @@ class "CTalentIcon"
 		self.curr_rank = 0
 		self.max_rank = 0
 		self.is_exceptional = false
+		self.is_final = false
 		self.visual_state = "locked"
 		self.talent_name = ""
 		self.prereq_tier = nil
@@ -116,12 +117,13 @@ class "CTalentIcon"
 
 		-- Icon shape: exceptional → square + bigger, normal → circular mask
 		if (self.is_exceptional) then
+			self.icon:SetTexture(self.icon_texture)
+			self.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 			self.icon:SetWidth(TALENT_ICON_SIZE_EXCEPTIONAL)
 			self.icon:SetHeight(TALENT_ICON_SIZE_EXCEPTIONAL)
+			
 			self.hover_frame:SetWidth(TALENT_ICON_SIZE_EXCEPTIONAL)
 			self.hover_frame:SetHeight(TALENT_ICON_SIZE_EXCEPTIONAL)
-			self:SetIcon(self.icon_texture)
-			self:SetIconCoords(0.08, 0.92, 0.08, 0.92)
 			self.hover_glow:SetTexture("Interface\\Buttons\\CheckButtonHilight")
 
 			if (maxRank == 1) then
@@ -129,11 +131,8 @@ class "CTalentIcon"
 			end
 
 		else
-			self:SetPortrait(self.icon_texture)
-			-- Circular mask on hover glow too
-			if (SetPortraitToTexture) then
-				SetPortraitToTexture(self.hover_glow, "Interface\\Buttons\\CheckButtonHilight")
-			end
+			SetPortraitToTexture(self.icon, self.icon_texture)
+			SetPortraitToTexture(self.hover_glow, "Interface\\Buttons\\CheckButtonHilight")
 		end
 
 		-- Query prerequisites
@@ -165,16 +164,29 @@ class "CTalentIcon"
 	-- =================== FRAME SHAPE =============================
 
 	ApplyFrameShape = function(self)
+		-- Fancy overlay for final talent (additional, not replacing border)
+		if (self.is_final and not self.fancy_frame) then
+			local fancy_size = TALENT_ICON_SIZE_EXCEPTIONAL + 18
+			self.fancy_frame = CreateFrame("Frame", nil, self.frame)
+			self.fancy_frame:SetWidth(fancy_size)
+			self.fancy_frame:SetHeight(fancy_size)
+			self.fancy_frame:SetPoint("CENTER", self.frame, "CENTER", 0, 0)
+			self.fancy_frame:SetFrameLevel(self.frame:GetFrameLevel() + 4)
+			self.fancy_tex = self.fancy_frame:CreateTexture(nil, "OVERLAY")
+			self.fancy_tex:SetAllPoints(self.fancy_frame)
+			self.fancy_tex:SetTexture(TALENT_ASSETS .. "talent-frame-square-fancy")
+		end
+
 		if (self.is_exceptional) then
 			self:SetBorder(TALENT_ASSETS .. "talent-frame-square")
-            self:SetSocket(TALENT_ASSETS .. "talent-socket-square")
+			self:SetSocket(TALENT_ASSETS .. "talent-socket-square")
 			self:SetBorderSize(TALENT_ICON_SIZE_EXCEPTIONAL + 3.3)
 			self.socket:SetWidth(self.size + 2)
 			self.socket:SetHeight(self.size + 2)
 		else
 			self:SetBorder(TALENT_ASSETS .. "talent-frame-circle")
 			self:SetSocket(TALENT_ASSETS .. "talent-socket-circle")
-            self.socket:SetWidth(self.size + 4)
+			self.socket:SetWidth(self.size + 4)
 			self.socket:SetHeight(self.size + 4)
 		end
 		self:ShowSocket()
@@ -210,75 +222,64 @@ class "CTalentIcon"
 
 	ApplyVisualState = function(self)
 		local state = self.visual_state
+		
+		self.socket:SetAlpha(1)
+		
+		local is_completely_locked = (state == "locked_in_locked_tier")
+		local is_locked = (state == "locked_in_locked_tier") or (state == "locked_in_unlocked_tier")
+		
+		if (is_completely_locked) then
+			
+			self.rank_text:SetTextColor(0.5, 0.5, 0.5)
+		
+			if (self.is_exceptional) then
+                self.icon:SetAlpha(0.5)
+                self.border:SetAlpha(0.6)
+            else
+                self.icon:SetAlpha(0.3)
+    			self.border:SetAlpha(0.4)
+            end
+			
+		else
+			self.rank_text:SetTextColor(1, 1, 1)
+			self.icon:SetAlpha(1)
+			self.border:SetAlpha(1)
+		end
+		
+		self:SetDesaturated(is_locked)
+		if (self.fancy_tex) then
+            self.fancy_tex:SetDesaturated(is_locked)
+        end
+		
+		if (is_locked) then
+			self.hover_glow:Hide()
+			if (self.fancy_tex) then
+				self.fancy_tex:SetAlpha(0.6)
+			end
+		end
 
 		if (state == "locked_in_locked_tier") then
-			self:SetDesaturated(true)
-			self:SetDesaturatedBorder(true)
-			self.socket:SetDesaturated(true)
-	
-            if (self.is_exceptional) then
-                self:SetIconAlpha(0.5)
-                self:SetBorderAlpha(0.6)
-            else
-                self:SetIconAlpha(0.3)
-    			self:SetBorderAlpha(0.4)
-            end
-			self:SetSocketAlpha(0.9)
-			self.rank_text:SetTextColor(0.5, 0.5, 0.5)
 			self.haze_tex:SetAlpha(0)
-			self.hover_alpha = 0
 			self:ApplyFrameShape()
 		elseif (state == "locked_in_unlocked_tier") then
-			self:SetDesaturated(true)
-			self:SetDesaturatedBorder(true)
-			self.socket:SetDesaturated(true)
-			self:SetIconAlpha(1.0)
-			self:SetBorderAlpha(1)
-			self:SetSocketAlpha(0.9)
-			self.rank_text:SetTextColor(1, 1, 1)
 			self.haze_tex:SetAlpha(0)
-			self.hover_alpha = 0
 			self:ApplyFrameShape()
 		elseif (state == "available") then
-   			self:SetDesaturated(false)
-            self:SetDesaturatedBorder(false)
-            self.socket:SetDesaturated(false)
-			self:SetIconAlpha(1)
-			self:SetBorderAlpha(1)
-			self:SetSocketAlpha(1)
-			self.rank_text:SetTextColor(1, 1, 1)
 			self.haze_tex:SetAlpha(1.0)
-			self.hover_alpha = 0.5
 			if (self.is_exceptional) then
 				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-green")
 			else
 				self:SetBorder(TALENT_ASSETS .. "talent-frame-circle-green")
 			end
         elseif (state == "partial") then
-			self:SetDesaturated(false)
-            self:SetDesaturatedBorder(false)
-            self.socket:SetDesaturated(false)
-			self:SetIconAlpha(1)
-			self:SetBorderAlpha(1)
-			self:SetSocketAlpha(1)
-			self.rank_text:SetTextColor(1, 1, 1)
 			self.haze_tex:SetAlpha(0.7)
-			self.hover_alpha = 0.5
 			if (self.is_exceptional) then
 				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-green")
 			else
 				self:SetBorder(TALENT_ASSETS .. "talent-frame-circle-green")
 			end
-		elseif (state == "maxed") then
-			self:SetDesaturated(false)
-            self:SetDesaturatedBorder(false)
-            self.socket:SetDesaturated(false)
-			self:SetIconAlpha(1)
-			self:SetBorderAlpha(1)
-			self:SetSocketAlpha(1)
-			self.rank_text:SetTextColor(1, 1, 1)
+		elseif (state == "maxed") then			
 			self.haze_tex:SetAlpha(0.7)
-			self.hover_alpha = 0.5
 			if (self.is_exceptional) then
 				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-gold")
 			else

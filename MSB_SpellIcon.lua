@@ -14,8 +14,8 @@ class "CIcon"
 
 		-- Socket background
 		self.socket = parent:CreateTexture(nil, "ARTWORK")
-		self.socket:SetWidth(self.size + 22)
-		self.socket:SetHeight(self.size + 22)
+		self.socket:SetWidth(self.size)
+		self.socket:SetHeight(self.size)
 		self.socket:SetPoint("CENTER", parent, "CENTER", 0, 0)
 
 		-- Icon texture
@@ -27,29 +27,19 @@ class "CIcon"
 
 		-- Border frame overlay
 		self.border_frame = CreateFrame("Frame", nil, parent)
-		self.border_frame:SetWidth(self.size + 32)
-		self.border_frame:SetHeight(self.size + 32)
+		self.border_frame:SetWidth(self.size)
+		self.border_frame:SetHeight(self.size)
 		self.border_frame:SetPoint("CENTER", parent, "CENTER", 0, 0)
 		self.border_frame:SetFrameLevel(parent:GetFrameLevel() + 3)
 		self.border = self.border_frame:CreateTexture(nil, "OVERLAY")
 		self.border:SetAllPoints(self.border_frame)
 
-		-- Round border (alternative style, hidden by default)
-		self.round_border_frame = CreateFrame("Frame", nil, parent)
-		self.round_border_frame:SetWidth(self.size + 8)
-		self.round_border_frame:SetHeight(self.size + 8)
-		self.round_border_frame:SetPoint("CENTER", self.icon, "CENTER", 0, 0)
-		self.round_border_frame:SetFrameLevel(parent:GetFrameLevel() + 3)
-		self.round_border = self.round_border_frame:CreateTexture(nil, "OVERLAY")
-		self.round_border:SetAllPoints(self.round_border_frame)
-		self.round_border_frame:Hide()
-
 		-- Hover highlight
 		self.hover_frame, self.hover_glow = MSB_CreateGlow(parent, self.size, nil, 4, "Interface\\Buttons\\CheckButtonHilight")
 		self.hover_frame:SetPoint("CENTER", self.icon, "CENTER", 0, 0)
 		self.hover_frame:Show()
-		self.hover_glow:SetAlpha(0)
-		self.hover_alpha = 0.5
+		self.hover_glow:SetAlpha(0.5)
+		self.hover_glow:Hide()
 
 		-- Cooldown
 		local cd_type = COOLDOWN_FRAME_TYPE or "Model"
@@ -80,12 +70,7 @@ class "CIcon"
 	end;
 
 	SetPortrait = function(self, texture)
-		if (SetPortraitToTexture) then
-			SetPortraitToTexture(self.icon, texture)
-		else
-			self.icon:SetTexture(texture)
-			self.icon:SetTexCoord(0.04, 0.96, 0.04, 0.96)
-		end
+		SetPortraitToTexture(self.icon, texture)
 	end;
 
 	SetIconAlpha = function(self, alpha)
@@ -149,32 +134,15 @@ class "CIcon"
 		self.border_frame:Hide()
 	end;
 
-	-- ==================== ROUND BORDER ===========================
-
-	SetRoundBorder = function(self, texture)
-		self.round_border:SetTexture(texture)
-	end;
-
-	ShowRoundBorder = function(self)
-		self.round_border_frame:Show()
-	end;
-
-	HideRoundBorder = function(self)
-		self.round_border_frame:Hide()
-	end;
 
 	-- ======================= HOVER ===============================
 
-	SetHoverAlpha = function(self, alpha)
-		self.hover_alpha = alpha
-	end;
-
 	ShowHover = function(self)
-		self.hover_glow:SetAlpha(self.hover_alpha)
+		self.hover_glow:Show()
 	end;
 
 	HideHover = function(self)
-		self.hover_glow:SetAlpha(0)
+		self.hover_glow:Hide()
 	end;
 
 	-- ====================== COOLDOWN =============================
@@ -193,18 +161,14 @@ class "CIcon"
 	-- ======================= STATE ===============================
 
 	SetDesaturated = function(self, desaturated)
-		if (self.icon.SetDesaturated) then
-			self.icon:SetDesaturated(desaturated)
-		elseif (desaturated) then
-			self.icon:SetVertexColor(0.4, 0.4, 0.4)
-		else
-			self.icon:SetVertexColor(1, 1, 1)
-		end
+		self.socket:SetDesaturated(desaturated)
+    	self.icon:SetDesaturated(desaturated)
+		self.border:SetDesaturated(desaturated)
+		self.hover_glow:SetDesaturated(desaturated)
 	end;
 
     SetDesaturatedBorder = function(self, desaturated)
     	self.border:SetDesaturated(desaturated)
-        self.round_border:SetDesaturated(desaturated)
 	end;
 }
 
@@ -218,6 +182,8 @@ class "CIcon"
 	and methods that use spellInfo / ModernSpellBook_DB.
 --]]
 
+local DEFAULT_SOCKET_SIZE = 22
+
 class "CSpellBookIcon"
 :extends("CIcon")
 {
@@ -225,9 +191,9 @@ class "CSpellBookIcon"
 		CIcon.__init(self, parent, DEFAULT_ICON_SIZE)
 
 		-- Spellbook socket & border textures
-		self:SetSocket("Interface\\Spellbook\\UI-Spellbook-SpellBackground")
-		self:SetBorder("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-frame")
-		self:SetRoundBorder("Interface\\AddOns\\ModernSpellBook\\Assets\\bluemenu-ring")
+		self.socket:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spell-socket")
+		self.socket:SetHeight(self.size + DEFAULT_SOCKET_SIZE)
+		self.socket:SetWidth(self.size + DEFAULT_SOCKET_SIZE)
 
 		-- Glow: shared for new/available highlights (changes color)
 		self.glow_frame, self.glow_tex = MSB_CreateGlow(parent, 60, nil, 15)
@@ -254,58 +220,50 @@ class "CSpellBookIcon"
 		self.glow_active:SetBlendMode("ADD")
 		self.glow_active:SetAlpha(0)
 
-		self.is_passive = false
 	end;
 
 	-- ========================= STYLE =============================
 
-	SetStyle = function(self, spellInfo)
-		if (spellInfo.isPassive) then
-			self:SetPortrait(spellInfo.spellIcon)
-			self:SetIconColor(1, 1, 1)
-			self.socket:SetTexture("")
-			self:SetSocketAlpha(0)
-			self:HideBorder()
-			self:ShowRoundBorder()
-			self.hover_alpha = 0
-		else
-			self:SetIcon(spellInfo.spellIcon)
-			self:SetIconCoords(0.04, 0.96, 0.04, 0.96)
-			self:SetIconColor(1, 1, 1)
-			self:SetSocketAlpha(1)
-			self.socket:SetWidth(self.size + 22)
-			self.socket:SetHeight(self.size + 22)
-			self.socket:SetPoint("TOPLEFT", self.parent, "TOPLEFT", -3, 3)
-			self:SetSocket("Interface\\Spellbook\\UI-Spellbook-SpellBackground")
-			self.socket:SetVertexColor(1, 1, 1, 1)
-			self:HideRoundBorder()
-			self:SetBorder("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-frame")
-			self.border:SetDrawLayer("OVERLAY", 1)
-			self.border:SetVertexColor(1, 1, 1)
-			self.hover_alpha = 0.5
-		end
-		self.is_passive = spellInfo.isPassive
-	end;
-
-	SetFancyFrame = function(self, spellInfo)
-		local show = true
+	SetSpell = function(self, spellInfo)
+	
+		local showBorder = true
+		
 		if (ModernSpellBook_DB and ModernSpellBook_DB.iconFrame) then
 			local is_other_tab = ModernSpellBookFrame.selectedTab and ModernSpellBookFrame.selectedTab > 2
 			if (spellInfo.isUnlearned) then
-				show = ModernSpellBook_DB.iconFrame.unlearned
-			elseif (spellInfo.isPassive) then
-				show = false
+				showBorder = ModernSpellBook_DB.iconFrame.unlearned
 			elseif (is_other_tab) then
-				show = ModernSpellBook_DB.iconFrame.other
+				showBorder = ModernSpellBook_DB.iconFrame.other
 			else
-				show = ModernSpellBook_DB.iconFrame.spells
+				showBorder = ModernSpellBook_DB.iconFrame.spells
 			end
 		end
-		if (show) then
-			self:ShowBorder()
+		
+		if (showBorder) then
+			self.border_frame:Show()
+			self.socket:Hide()
 		else
-			self:HideBorder()
+			self.border_frame:Hide()
+			self.socket:Show()
 		end
+		
+		
+		if (spellInfo.isPassive) then
+			SetPortraitToTexture(self.icon, spellInfo.spellIcon)
+			SetPortraitToTexture(self.hover_glow, "Interface\\Buttons\\CheckButtonHilight") 
+			self.border:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\bluemenu-ring")
+			self.border_frame:SetWidth(self.size + 8)
+			self.border_frame:SetHeight(self.size + 8)
+			self.socket:Hide()
+		else
+			self.icon:SetTexture(spellInfo.spellIcon)
+			self.hover_glow:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+			self.border:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-frame")
+			self.border_frame:SetWidth(self.size + 18)
+			self.border_frame:SetHeight(self.size + 18)
+		end
+		
+		
 	end;
 
 	-- ======================= HIGHLIGHTS ==========================
@@ -374,26 +332,21 @@ class "CSpellBookIcon"
 	SetLearnedState = function(self, spellInfo)
 		if (spellInfo.isUnlearned) then
 			self:SetDesaturated(true)
-			self:SetIconAlpha(0.5)
+			self.socket:SetAlpha(0.5)
+			self.icon:SetAlpha(0.5)
+			self.border:SetAlpha(0.5)
+			
 			local show_unlearned = ModernSpellBook_DB and ModernSpellBook_DB.iconFrame and ModernSpellBook_DB.iconFrame.unlearned
 			if (not show_unlearned) then
 				self:HideBorder()
-			else
-				if (self.border and self.border.SetDesaturated) then
-					self.border:SetDesaturated(true)
-				end
-				self:SetBorderAlpha(0.5)
 			end
-			self:SetSocketAlpha(0.5)
-			self.hover_alpha = 0
+
+			self.hover_glow:Hide()
 		else
 			self:SetDesaturated(false)
-			if (self.border and self.border.SetDesaturated) then
-				self.border:SetDesaturated(false)
-			end
-			self:SetBorderAlpha(1)
-			self:SetIconAlpha(1)
-			self:SetSocketAlpha(1)
+			self.socket:SetAlpha(1.0)
+			self.icon:SetAlpha(1.0)			
+			self.border:SetAlpha(1.0)
 		end
 	end;
 
