@@ -1,187 +1,11 @@
 --[[
-	CIcon: Generic reusable icon component.
-	Contains: socket, icon texture, border, round border,
-	hover highlight, cooldown. No addon-specific logic.
---]]
-
-local DEFAULT_ICON_SIZE = 28
-
-class "CIcon"
-{
-	__init = function(self, parent, size)
-		self.parent = parent
-		self.size = size or DEFAULT_ICON_SIZE
-
-		-- Socket background
-		self.socket = parent:CreateTexture(nil, "ARTWORK")
-		self.socket:SetWidth(self.size)
-		self.socket:SetHeight(self.size)
-		self.socket:SetPoint("CENTER", parent, "CENTER", 0, 0)
-
-		-- Icon texture
-		self.icon = parent:CreateTexture(nil, "OVERLAY")
-		self.icon:SetWidth(self.size)
-		self.icon:SetHeight(self.size)
-		self.icon:SetPoint("CENTER", parent, "CENTER", 0, 0)
-		self.icon:SetTexCoord(0.04, 0.96, 0.04, 0.96)
-
-		-- Border frame overlay
-		self.border_frame = CreateFrame("Frame", nil, parent)
-		self.border_frame:SetWidth(self.size)
-		self.border_frame:SetHeight(self.size)
-		self.border_frame:SetPoint("CENTER", parent, "CENTER", 0, 0)
-		self.border_frame:SetFrameLevel(parent:GetFrameLevel() + 3)
-		self.border = self.border_frame:CreateTexture(nil, "OVERLAY")
-		self.border:SetAllPoints(self.border_frame)
-
-		-- Hover highlight
-		self.hover_frame, self.hover_glow = MSB_CreateGlow(parent, self.size, nil, 4, "Interface\\Buttons\\CheckButtonHilight")
-		self.hover_frame:SetPoint("CENTER", self.icon, "CENTER", 0, 0)
-		self.hover_frame:Show()
-		self.hover_glow:SetAlpha(0.5)
-		self.hover_glow:Hide()
-
-		-- Cooldown
-		local cd_type = COOLDOWN_FRAME_TYPE or "Model"
-		local cd_ok, cd_frame = pcall(CreateFrame, cd_type, nil, parent, "CooldownFrameTemplate")
-		if (not cd_ok) then
-			cd_ok, cd_frame = pcall(CreateFrame, "Cooldown", nil, parent, "CooldownFrameTemplate")
-		end
-		if (cd_ok and cd_frame) then
-			self.cooldown = cd_frame
-			self.cooldown:SetPoint("TOPLEFT", self.icon, "TOPLEFT", 0, 0)
-			self.cooldown:SetPoint("BOTTOMRIGHT", self.icon, "BOTTOMRIGHT", 0, 0)
-			if (self.cooldown.SetDrawEdge) then
-				self.cooldown:SetDrawEdge(false)
-			end
-		else
-			self.cooldown = nil
-		end
-	end;
-
-	-- ========================= ICON ==============================
-
-	SetIcon = function(self, texture)
-		self.icon:SetTexture(texture)
-	end;
-
-	SetIconCoords = function(self, l, r, t, b)
-		self.icon:SetTexCoord(l, r, t, b)
-	end;
-
-	SetPortrait = function(self, texture)
-		SetPortraitToTexture(self.icon, texture)
-	end;
-
-	SetIconAlpha = function(self, alpha)
-		self.icon:SetAlpha(alpha)
-	end;
-
-	SetIconColor = function(self, r, g, b)
-		self.icon:SetVertexColor(r, g, b)
-	end;
-
-	-- ======================== SOCKET =============================
-
-	SetSocket = function(self, texture)
-		self.socket:SetTexture(texture)
-	end;
-
-	SetSocketAlpha = function(self, alpha)
-		self.socket:SetAlpha(alpha)
-	end;
-
-	ShowSocket = function(self)
-		self.socket:Show()
-	end;
-
-	HideSocket = function(self)
-		self.socket:Hide()
-	end;
-
-	-- ======================== BORDER =============================
-
-	SetBorder = function(self, texture)
-		self.border:SetTexture(texture)
-	end;
-
-    SetBorderWidth = function(self, w)
-        self.border_frame:SetWidth(w)
-    end;
-
-    SetBorderHeight = function(self, h)
-        self.border_frame:SetHeight(h)
-    end;
-
-    SetBorderSize = function(self, size)
-        self.border_frame:SetWidth(size)
-        self.border_frame:SetHeight(size)
-    end;
-
-    SetBorderColor = function(self, r, g, b)
-        self.border:SetVertexColor(r, g, b)
-    end;
-
-	SetBorderAlpha = function(self, alpha)
-		self.border:SetAlpha(alpha)
-	end;
-
-	ShowBorder = function(self)
-		self.border_frame:Show()
-	end;
-
-	HideBorder = function(self)
-		self.border_frame:Hide()
-	end;
-
-
-	-- ======================= HOVER ===============================
-
-	ShowHover = function(self)
-		self.hover_glow:Show()
-	end;
-
-	HideHover = function(self)
-		self.hover_glow:Hide()
-	end;
-
-	-- ====================== COOLDOWN =============================
-
-	SetCooldown = function(self, start, duration, enable)
-		if (self.cooldown) then
-			local cd_func = CooldownFrame_SetTimer or CooldownFrame_Set
-			if (cd_func) then cd_func(self.cooldown, start, duration, enable) end
-		end
-	end;
-
-	HideCooldown = function(self)
-		if (self.cooldown) then self.cooldown:Hide() end
-	end;
-
-	-- ======================= STATE ===============================
-
-	SetDesaturated = function(self, desaturated)
-		self.socket:SetDesaturated(desaturated)
-    	self.icon:SetDesaturated(desaturated)
-		self.border:SetDesaturated(desaturated)
-		self.hover_glow:SetDesaturated(desaturated)
-	end;
-
-    SetDesaturatedBorder = function(self, desaturated)
-    	self.border:SetDesaturated(desaturated)
-	end;
-}
-
---==============================================================================
---====================== Class "CSpellBookIcon" ================================
---==============================================================================
-
---[[
-	Extends CIcon with spellbook-specific components and logic:
+	CSpellBookIcon: Extends CIcon with spellbook-specific components and logic:
 	glows (new, available, active), badges (new, train),
 	and methods that use spellInfo / ModernSpellBook_DB.
 --]]
 
+local SPELLBOOK_ASSETS = "Interface\\AddOns\\ModernSpellBook\\Assets\\Spellbook\\"
+local DEFAULT_ICON_SIZE = 28
 local DEFAULT_SOCKET_SIZE = 22
 
 class "CSpellBookIcon"
@@ -191,7 +15,7 @@ class "CSpellBookIcon"
 		CIcon.__init(self, parent, DEFAULT_ICON_SIZE)
 
 		-- Spellbook socket & border textures
-		self.socket:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spell-socket")
+		self.socket:SetTexture(SPELLBOOK_ASSETS .. "spell-socket")
 		self.socket:SetHeight(self.size + DEFAULT_SOCKET_SIZE)
 		self.socket:SetWidth(self.size + DEFAULT_SOCKET_SIZE)
 
@@ -225,9 +49,9 @@ class "CSpellBookIcon"
 	-- ========================= STYLE =============================
 
 	SetSpell = function(self, spellInfo)
-	
+
 		local showBorder = true
-		
+
 		if (ModernSpellBook_DB and ModernSpellBook_DB.iconFrame) then
 			local is_other_tab = ModernSpellBookFrame.selectedTab and ModernSpellBookFrame.selectedTab > 2
 			if (spellInfo.isUnlearned) then
@@ -238,7 +62,7 @@ class "CSpellBookIcon"
 				showBorder = ModernSpellBook_DB.iconFrame.spells
 			end
 		end
-		
+
 		if (showBorder) then
 			self.border_frame:Show()
 			self.socket:Hide()
@@ -246,24 +70,24 @@ class "CSpellBookIcon"
 			self.border_frame:Hide()
 			self.socket:Show()
 		end
-		
-		
+
+
 		if (spellInfo.isPassive) then
 			SetPortraitToTexture(self.icon, spellInfo.spellIcon)
-			SetPortraitToTexture(self.hover_glow, "Interface\\Buttons\\CheckButtonHilight") 
-			self.border:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\bluemenu-ring")
+			SetPortraitToTexture(self.hover_glow, "Interface\\Buttons\\CheckButtonHilight")
+			self.border:SetTexture(SPELLBOOK_ASSETS .. "bluemenu-ring")
 			self.border_frame:SetWidth(self.size + 8)
 			self.border_frame:SetHeight(self.size + 8)
 			self.socket:Hide()
 		else
 			self.icon:SetTexture(spellInfo.spellIcon)
 			self.hover_glow:SetTexture("Interface\\Buttons\\CheckButtonHilight")
-			self.border:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-frame")
+			self.border:SetTexture(SPELLBOOK_ASSETS .. "spellbook-frame")
 			self.border_frame:SetWidth(self.size + 18)
 			self.border_frame:SetHeight(self.size + 18)
 		end
-		
-		
+
+
 	end;
 
 	-- ======================= HIGHLIGHTS ==========================
@@ -335,17 +159,17 @@ class "CSpellBookIcon"
 			self.socket:SetAlpha(0.5)
 			self.icon:SetAlpha(0.5)
 			self.border:SetAlpha(0.5)
-			
+
 			local show_unlearned = ModernSpellBook_DB and ModernSpellBook_DB.iconFrame and ModernSpellBook_DB.iconFrame.unlearned
 			if (not show_unlearned) then
-				self:HideBorder()
+				self.border_frame:Hide()
 			end
 
 			self.hover_glow:Hide()
 		else
 			self:SetDesaturated(false)
 			self.socket:SetAlpha(1.0)
-			self.icon:SetAlpha(1.0)			
+			self.icon:SetAlpha(1.0)
 			self.border:SetAlpha(1.0)
 		end
 	end;

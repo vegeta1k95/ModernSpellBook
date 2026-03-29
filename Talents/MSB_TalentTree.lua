@@ -204,7 +204,7 @@ class "CTalentTree"
 		local titleIcon = titleIconFrame:CreateTexture(nil, "OVERLAY")
 		titleIcon:SetAllPoints(titleIconFrame)
 		titleIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-		titleIcon:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\classicon-" .. string.lower(englishClass))
+		titleIcon:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\classicon-" .. string.lower(englishClass))
 
 		local numTabs = GetNumTalentTabs()
 		-- Offset to center 4-col layout within 7-col panel
@@ -584,9 +584,9 @@ class "CTalentTree"
 			icon:SetTalentData(talent.talent_tab, talent.talent_index)
 			if (icon.curr_rank >= icon.max_rank) then
 				if (icon.is_exceptional) then
-					icon:SetBorder(TALENT_ASSETS .. "talent-frame-square-gold")
+					icon.border:SetTexture(TALENT_ASSETS .. "talent-frame-square-gold")
 				else
-					icon:SetBorder(TALENT_ASSETS .. "talent-frame-circle-gold")
+					icon.border:SetTexture(TALENT_ASSETS .. "talent-frame-circle-gold")
 				end
 			end
 			icon.frame:SetPoint("LEFT", lockTex, "RIGHT", -40, 0)

@@ -8,7 +8,6 @@
 	  Normal      → round frame + circular icon mask
 --]]
 
-local ASSETS = "Interface\\AddOns\\ModernSpellBook\\Assets\\"
 local TALENT_ASSETS = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\"
 local TALENT_ICON_SIZE = 30
 local TALENT_ICON_SIZE_EXCEPTIONAL = 34
@@ -27,9 +26,10 @@ class "CTalentIcon"
 		CIcon.__init(self, self.frame, TALENT_ICON_SIZE)
 
 		-- Default to square frame
-		self:SetBorder(TALENT_ASSETS .. "talent-frame-square")
-		self:SetBorderSize(TALENT_ICON_SIZE + 3.3)
-		self:HideCooldown()
+		self.border:SetTexture(TALENT_ASSETS .. "talent-frame-square")
+		self.border_frame:SetWidth(TALENT_ICON_SIZE + 3.3)
+		self.border_frame:SetHeight(TALENT_ICON_SIZE + 3.3)
+		if (self.cooldown) then self.cooldown:Hide() end
 
 		-- Haze glow behind the icon (spec-colored, below everything)
 		self.haze_frame = CreateFrame("Frame", nil, self.frame)
@@ -67,7 +67,7 @@ class "CTalentIcon"
 		-- Event handlers
 		local talent_icon = self
 		self.frame:SetScript("OnEnter", function()
-			talent_icon:ShowHover()
+			talent_icon.hover_glow:Show()
 			GameTooltip:SetOwner(talent_icon.frame, "ANCHOR_RIGHT")
 			if (GameTooltip.SetTalent) then
 				GameTooltip:SetTalent(talent_icon.talent_tab, talent_icon.talent_index)
@@ -78,7 +78,7 @@ class "CTalentIcon"
 		end)
 
 		self.frame:SetScript("OnLeave", function()
-			talent_icon:HideHover()
+			talent_icon.hover_glow:Hide()
 			GameTooltip:Hide()
 		end)
 
@@ -178,18 +178,19 @@ class "CTalentIcon"
 		end
 
 		if (self.is_exceptional) then
-			self:SetBorder(TALENT_ASSETS .. "talent-frame-square")
-			self:SetSocket(TALENT_ASSETS .. "talent-socket-square")
-			self:SetBorderSize(TALENT_ICON_SIZE_EXCEPTIONAL + 3.3)
+			self.border:SetTexture(TALENT_ASSETS .. "talent-frame-square")
+			self.socket:SetTexture(TALENT_ASSETS .. "talent-socket-square")
+			self.border_frame:SetWidth(TALENT_ICON_SIZE_EXCEPTIONAL + 3.3)
+			self.border_frame:SetHeight(TALENT_ICON_SIZE_EXCEPTIONAL + 3.3)
 			self.socket:SetWidth(self.size + 2)
 			self.socket:SetHeight(self.size + 2)
 		else
-			self:SetBorder(TALENT_ASSETS .. "talent-frame-circle")
-			self:SetSocket(TALENT_ASSETS .. "talent-socket-circle")
+			self.border:SetTexture(TALENT_ASSETS .. "talent-frame-circle")
+			self.socket:SetTexture(TALENT_ASSETS .. "talent-socket-circle")
 			self.socket:SetWidth(self.size + 4)
 			self.socket:SetHeight(self.size + 4)
 		end
-		self:ShowSocket()
+		self.socket:Show()
 	end;
 
 	-- ================== VISUAL STATE =============================
@@ -267,23 +268,23 @@ class "CTalentIcon"
 		elseif (state == "available") then
 			self.haze_tex:SetAlpha(1.0)
 			if (self.is_exceptional) then
-				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-green")
+				self.border:SetTexture(TALENT_ASSETS .. "talent-frame-square-green")
 			else
-				self:SetBorder(TALENT_ASSETS .. "talent-frame-circle-green")
+				self.border:SetTexture(TALENT_ASSETS .. "talent-frame-circle-green")
 			end
         elseif (state == "partial") then
 			self.haze_tex:SetAlpha(0.7)
 			if (self.is_exceptional) then
-				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-green")
+				self.border:SetTexture(TALENT_ASSETS .. "talent-frame-square-green")
 			else
-				self:SetBorder(TALENT_ASSETS .. "talent-frame-circle-green")
+				self.border:SetTexture(TALENT_ASSETS .. "talent-frame-circle-green")
 			end
 		elseif (state == "maxed") then			
 			self.haze_tex:SetAlpha(0.7)
 			if (self.is_exceptional) then
-				self:SetBorder(TALENT_ASSETS .. "talent-frame-square-gold")
+				self.border:SetTexture(TALENT_ASSETS .. "talent-frame-square-gold")
 			else
-				self:SetBorder(TALENT_ASSETS .. "talent-frame-circle-gold")
+				self.border:SetTexture(TALENT_ASSETS .. "talent-frame-circle-gold")
 			end
 		end
 	end;

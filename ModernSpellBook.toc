@@ -9,25 +9,35 @@
 
 ## SavedVariablesPerCharacter: ModernSpellBook_DB
 
-lua_oop.lua
-MSB_Compat.lua
-MSB_TextStyle.lua
-MSB_UIFactories.lua
-MSB_SearchBar.lua
-MSB_Localization.lua
-MSB_Core.lua
-MSB_SpellData.lua
-MSB_Settings.lua
-MSB_ActionBar.lua
-MSB_SpellIcon.lua
-MSB_SpellItem.lua
-MSB_SpellFrame.lua
-MSB_Stances.lua
-MSB_TrainerData.lua
-MSB_Talents.lua
-MSB_TalentIcon.lua
-MSB_TalentArrow.lua
-MSB_TalentTree.lua
-MSB_Tabs.lua
-MSB_SlashCommands.lua
-MSB_Debug.lua
+# Lib
+Lib\MSB_Class.lua
+Lib\MSB_Compat.lua
+Lib\MSB_UIFactories.lua
+Lib\MSB_TextStyle.lua
+
+# Core
+Core\MSB_Localization.lua
+Core\MSB_Icon.lua
+
+# Spellbook
+Spellbook\MSB_Core.lua
+Spellbook\MSB_SpellData.lua
+Core\MSB_Settings.lua
+Spellbook\MSB_ActionBar.lua
+Spellbook\MSB_SpellbookIcon.lua
+Spellbook\MSB_SpellItem.lua
+Spellbook\MSB_SpellFrame.lua
+Spellbook\MSB_SearchBar.lua
+Spellbook\MSB_Stances.lua
+Spellbook\MSB_TrainerData.lua
+Spellbook\MSB_Tabs.lua
+
+# Talents
+Talents\MSB_Talents.lua
+Talents\MSB_TalentIcon.lua
+Talents\MSB_TalentArrow.lua
+Talents\MSB_TalentTree.lua
+
+# Debug
+Debug\MSB_SlashCommands.lua
+Debug\MSB_Debug.lua

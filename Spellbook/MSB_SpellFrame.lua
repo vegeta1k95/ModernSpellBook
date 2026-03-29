@@ -41,7 +41,7 @@ class "CCategoryItem"
 		self.lightBorder:SetWidth(256)
 		self.lightBorder:SetHeight(44)
 		self.lightBorder:SetPoint("LEFT", self.specIconFrame, "LEFT", -10, 0)
-		self.lightBorder:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-section-highlight")
+		self.lightBorder:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\Spellbook\\spellbook-section-highlight")
 		self.lightBorder:SetBlendMode("ADD")
 		self.lightBorder:SetDrawLayer("OVERLAY", -2)
 		self.lightBorder:SetAlpha(0.4)
@@ -50,7 +50,7 @@ class "CCategoryItem"
 		self.separator:SetWidth(400)
 		self.separator:SetHeight(10)
 		self.separator:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -30)
-		self.separator:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\separator")
+		self.separator:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\Spellbook\\separator")
 	end;
 
 	-- ========================= SET ===============================

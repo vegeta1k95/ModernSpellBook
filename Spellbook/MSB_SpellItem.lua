@@ -27,7 +27,7 @@ class "CSpellItem"
 		local spellIcon = self.spellIcon
 		self.frame:SetScript("OnLeave", function()
 			GameTooltip:Hide()
-			spellIcon:HideHover()
+			spellIcon.hover_glow:Hide()
 		end)
 
 		-- Text container (positioned to the right of the icon)
@@ -50,7 +50,7 @@ class "CSpellItem"
 		self.trailBg:SetWidth(170)
 		self.trailBg:SetHeight(40)
 		self.trailBg:SetPoint("LEFT", self.frame, "CENTER", 0, 0)
-		self.trailBg:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\spellbook-trail")
+		self.trailBg:SetTexture("Interface\\AddOns\\ModernSpellBook\\Assets\\Spellbook\\spellbook-trail")
 		self.trailBg:SetAlpha(1)
 
 		-- Rank / subtitle text
@@ -188,7 +188,7 @@ class "CSpellItem"
 		local spellIcon = self.spellIcon
 		local frame = self.frame
 		frame:SetScript("OnEnter", function()
-			spellIcon:ShowHover()
+			spellIcon.hover_glow:Show()
 
 			-- Dismiss available-to-learn highlight on hover
 			spellIcon:DismissAvailableHighlight(spellInfo)
