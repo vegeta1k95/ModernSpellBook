@@ -167,19 +167,20 @@ class "CSpellItem"
 				return
 			end
 
-			-- Chat edit box: insert colored name
+			-- Chat edit box: insert clickable spell link
 			if (not ChatFrameEditBox or not ChatFrameEditBox:IsVisible()) then return end
 
-			local text
-			if (spellInfo.spellRank and spellInfo.spellRank ~= "") then
-				text = "|cff71d5ff[" .. spellInfo.spellName .. "(" .. spellInfo.spellRank .. ")]|r"
-			else
-				text = "|cff71d5ff[" .. spellInfo.spellName .. "]|r"
+			local displayName = spellInfo.spellName
+
+			-- Get real spell ID from spellbook slot (3rd return of GetSpellName)
+			local realSpellID = spellInfo.spellID
+			if (spellInfo.bookType) then
+				local _, _, sid = GetSpellName(spellInfo.spellID, spellInfo.bookType)
+				if (sid) then realSpellID = sid end
 			end
 
-			if (text) then
-				ChatFrameEditBox:Insert(text)
-			end
+			local link = "|cff71d5ff|Henchant:" .. realSpellID .. "|h[" .. displayName .. "]|h|r"
+			ChatFrameEditBox:Insert(link)
 		end)
 	end;
 
