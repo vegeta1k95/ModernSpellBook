@@ -19,6 +19,19 @@ class "CExpandedSpecFrame"
 
 		-- Right-click to go back
 		self.frame:EnableMouse(true)
+		self.frame:RegisterForDrag("LeftButton")
+		self.frame:SetScript("OnDragStart", function()
+			if (self.parent_tree) then
+				self.parent_tree.frame:StartMoving()
+			end
+		end)
+		self.frame:SetScript("OnDragStop", function()
+			if (self.parent_tree) then
+				self.parent_tree.frame:StopMovingOrSizing()
+				local point, _, relPoint, x, y = self.parent_tree.frame:GetPoint()
+				ModernSpellBook_DB.talentPosition = { point = point, relPoint = relPoint, x = x, y = y }
+			end
+		end)
 		self.frame:SetScript("OnMouseUp", function()
 			if (arg1 == "RightButton" and self.parent_tree) then
 				self.parent_tree:CollapseSpec()

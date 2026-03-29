@@ -187,17 +187,7 @@ class "CTalentTree"
 		resizeHandle:SetHeight(16)
 		resizeHandle:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -4, 4)
 		resizeHandle:SetFrameLevel(self.frame:GetFrameLevel() + 20)
-		local resizeTex = resizeHandle:CreateTexture(nil, "OVERLAY")
-		resizeTex:SetAllPoints(resizeHandle)
-		resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-		resizeHandle:SetScript("OnEnter", function()
-			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-		end)
-		resizeHandle:SetScript("OnLeave", function()
-			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-		end)
 		resizeHandle:SetScript("OnMouseDown", function()
-			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
 			local startX, startY = GetCursorPosition()
 			local startScale = self.frame:GetScale()
 			local left, top = self.frame:GetLeft(), self.frame:GetTop()
@@ -217,7 +207,6 @@ class "CTalentTree"
 			end)
 		end)
 		resizeHandle:SetScript("OnMouseUp", function()
-			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
 			resizeHandle:SetScript("OnUpdate", nil)
 			ModernSpellBook_DB.talentScale = self.frame:GetScale()
 			local point, _, relPoint, x, y = self.frame:GetPoint()
@@ -480,6 +469,12 @@ class "CTalentTree"
 		for _, spec in ipairs(self.specs) do
 			local _, _, pointsSpent = GetTalentTabInfo(spec.tab_index)
 			spec.grid:Refresh(pointsSpent, remaining)
+		end
+
+		-- Refresh expanded view's grid if visible
+		if (self.expanded_spec and self.expanded_view and self.expanded_view.grid) then
+			local _, _, pointsSpent = GetTalentTabInfo(self.specs[self.expanded_spec].tab_index)
+			self.expanded_view.grid:Refresh(pointsSpent, remaining)
 		end
 
 		if (remaining > 0) then
