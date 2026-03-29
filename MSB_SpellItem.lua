@@ -251,13 +251,13 @@ class "CSpellItem"
 				if (spellInfo.bookType) then
 					GameTooltip:SetSpell(spellInfo.spellID, spellInfo.bookType)
 				else
-					GameTooltip:SetSpellByID(spellInfo.spellID)
+					MSB_SetTooltipSpell(spellInfo.spellID)
 				end
 			else
 				if (GameTooltip.SetTalent) then
 					GameTooltip:SetTalent(spellInfo.talentGrid[1], spellInfo.talentGrid[2])
 				else
-					local talentLink = GetTalentLink(spellInfo.talentGrid[1], spellInfo.talentGrid[2])
+					local talentLink = MSB_GetTalentLink(spellInfo.talentGrid[1], spellInfo.talentGrid[2])
 					if (talentLink) then
 						GameTooltip:SetHyperlink(talentLink)
 					else

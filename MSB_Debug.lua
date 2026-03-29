@@ -53,7 +53,7 @@ SlashCmdList["MSBDEBUG"] = function()
 				allSpellsDict[tabName] = {}
 				passiveSpellsDict[tabName] = {}
 				for s = offset + 1, offset + numSpells do
-					if (not IsSpellHidden(s, BOOKTYPE_SPELL)) then
+					if (not MSB_IsSpellHidden(s, BOOKTYPE_SPELL)) then
 						local spellInfo = SpellDataService:SpellInfoFromSpellBookItem(tabName, s)
 						if (spellInfo.isPassive) then
 							table.insert(passiveSpellsDict[tabName], spellInfo)

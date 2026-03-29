@@ -42,7 +42,7 @@ class "CSpellDataService"
 		if (spellInfo.isTalent or spellInfo.isTalentAbility) then
 			kw = kw .. TALENT .. ";"
 		else
-			local desc = GetSpellDescription(spellInfo.spellID)
+			local desc = MSB_GetSpellDescription(spellInfo.spellID)
 			if (desc) then
 				kw = kw .. desc .. ";"
 			end
@@ -213,8 +213,8 @@ class "CSpellDataService"
 	-- =================== SPELL COLLECTION ========================
 
 	SpellInfoFromSpellBookItem = function(self, tabName, s)
-		local spellNameFromBook, spellRank = GetSpellBookItemName(s, BOOKTYPE_SPELL)
-		local spellIcon = GetSpellBookItemTexture(s, BOOKTYPE_SPELL)
+		local spellNameFromBook, spellRank = MSB_GetSpellBookItemName(s, BOOKTYPE_SPELL)
+		local spellIcon = MSB_GetSpellBookItemTexture(s, BOOKTYPE_SPELL)
 
 		local spellID = s
 		local castName = spellNameFromBook
@@ -229,7 +229,7 @@ class "CSpellDataService"
 			spellInfo.stanceIndex = ModernSpellBookFrame.unlockedStances[spellNameFromBook]
 		end
 
-		local isPassive = IsPassiveSpell(s, BOOKTYPE_SPELL)
+		local isPassive = MSB_IsPassiveSpell(s, BOOKTYPE_SPELL)
 		if (isPassive) then
 			spellRank = (spellRank and spellRank ~= "") and spellRank or PET_PASSIVE
 		end
@@ -256,17 +256,17 @@ class "CSpellDataService"
 		local petSpells = {}
 		petSpells[petName] = {}
 		for i = 1, NUM_PET_ACTION_SLOTS do
-			local spellName, spellSubName = GetSpellBookItemName(i, BOOKTYPE_PET)
+			local spellName, spellSubName = MSB_GetSpellBookItemName(i, BOOKTYPE_PET)
 			if (not spellName) then break end
 
-			local spellIcon = GetSpellBookItemTexture(i, BOOKTYPE_PET)
+			local spellIcon = MSB_GetSpellBookItemTexture(i, BOOKTYPE_PET)
 			local spellInfo = {
 				spellName = spellName,
 				spellIcon = spellIcon,
 				spellRank = spellSubName or "",
 				spellID = i,
 				bookType = BOOKTYPE_PET,
-				isPassive = IsPassiveSpell(i, BOOKTYPE_PET),
+				isPassive = MSB_IsPassiveSpell(i, BOOKTYPE_PET),
 				isTalent = false,
 				isPetSpell = true,
 				castName = actionBarSpells[spellName],
@@ -364,7 +364,7 @@ class "CSpellDataService"
 				passiveSpellsDict[tabName] = {}
 
 				for s = offset + 1, offset + numSpells do
-					if (not IsSpellHidden(s, BOOKTYPE_SPELL)) then
+					if (not MSB_IsSpellHidden(s, BOOKTYPE_SPELL)) then
 						local spellInfo = self:SpellInfoFromSpellBookItem(tabName, s)
 						self:RegisterSpell(spellInfo)
 

@@ -65,71 +65,46 @@ if not SOUNDKIT then
     }
 end
 
--- GetSpellBookItemName polyfill (vanilla uses GetSpellName)
-if not GetSpellBookItemName then
-    GetSpellBookItemName = function(index, bookType)
-        return GetSpellName(index, bookType)
+-- MSB-scoped wrappers for spellbook item APIs
+function MSB_GetSpellBookItemName(index, bookType)
+    if (GetSpellBookItemName) then
+        return GetSpellBookItemName(index, bookType)
     end
+    return GetSpellName(index, bookType)
 end
 
--- GetSpellBookItemTexture polyfill (vanilla uses GetSpellTexture)
-if not GetSpellBookItemTexture then
-    GetSpellBookItemTexture = function(index, bookType)
-        return GetSpellTexture(index, bookType)
+function MSB_GetSpellBookItemTexture(index, bookType)
+    if (GetSpellBookItemTexture) then
+        return GetSpellBookItemTexture(index, bookType)
     end
+    return GetSpellTexture(index, bookType)
 end
 
--- GetSpellBookItemInfo polyfill
--- In vanilla, returns "SPELL", slotIndex (we use slotIndex as the "spellID")
-if not GetSpellBookItemInfo then
-    GetSpellBookItemInfo = function(index, bookType)
-        local name = GetSpellName(index, bookType)
-        if name then
-            return "SPELL", index
-        end
-        return nil, nil
+-- MSB-scoped wrappers: use vanilla API if available, otherwise fallback
+function MSB_IsPassiveSpell(index, bookType)
+    if (IsPassiveSpell) then
+        return IsPassiveSpell(index, bookType)
     end
+    bookType = bookType or BOOKTYPE_SPELL
+    local _, rank = GetSpellName(index, bookType)
+    if rank and (rank == PASSIVE or rank == "Passive") then
+        return true
+    end
+    return false
 end
 
--- GetSpellInfo polyfill for vanilla
--- When called with (index, bookType), returns spell data from the spellbook
--- When called with just (index), treats it as a spellbook slot in BOOKTYPE_SPELL
-if not GetSpellInfo then
-    GetSpellInfo = function(index, bookType)
-        if not index then return nil end
-        bookType = bookType or BOOKTYPE_SPELL
-        local name, rank = GetSpellName(index, bookType)
-        if not name then return nil end
-        local icon = GetSpellTexture(index, bookType)
-        -- Return: name, rank, icon, castTime, minRange, maxRange, spellID
-        return name, rank, icon, 0, 0, 0, index
+function MSB_IsSpellHidden(index, bookType)
+    if (IsSpellHidden) then
+        return IsSpellHidden(index, bookType)
     end
+    return false
 end
 
--- IsPassiveSpell polyfill (may not exist in Turtle WoW)
-if not IsPassiveSpell then
-    IsPassiveSpell = function(index, bookType)
-        bookType = bookType or BOOKTYPE_SPELL
-        local _, rank = GetSpellName(index, bookType)
-        if rank and (rank == PASSIVE or rank == "Passive") then
-            return true
-        end
-        return false
+function MSB_GetSpellDescription(index)
+    if (GetSpellDescription) then
+        return GetSpellDescription(index)
     end
-end
-
--- IsSpellHidden polyfill (no hidden spells in vanilla)
-if not IsSpellHidden then
-    IsSpellHidden = function()
-        return false
-    end
-end
-
--- GetSpellDescription polyfill (not available in vanilla)
-if not GetSpellDescription then
-    GetSpellDescription = function()
-        return nil
-    end
+    return nil
 end
 
 -- PRODUCT_CHOICE_PAGE_NUMBER polyfill
@@ -137,49 +112,29 @@ if not PRODUCT_CHOICE_PAGE_NUMBER then
     PRODUCT_CHOICE_PAGE_NUMBER = "Page %d / %d"
 end
 
--- CooldownFrame_Set polyfill (vanilla uses CooldownFrame_SetTimer)
-if not CooldownFrame_Set then
-    if CooldownFrame_SetTimer then
-        CooldownFrame_Set = CooldownFrame_SetTimer
+function MSB_SetTooltipSpell(spellID, bookType)
+    if (GameTooltip.SetSpellByID) then
+        GameTooltip:SetSpellByID(spellID, bookType)
+    elseif (spellID and type(spellID) == "number") then
+        GameTooltip:SetSpell(spellID, bookType or BOOKTYPE_SPELL)
+    end
+end
+
+function MSB_GetTalentLink(tab, index)
+    if (GetTalentLink) then
+        return GetTalentLink(tab, index)
+    end
+    local name = GetTalentInfo(tab, index)
+    if name then
+        return "|cff71d5ff[" .. name .. "]|r"
+    end
+    return nil
+end
+
+function MSB_PickupSpellBookItem(slot, bookType)
+    if (PickupSpellBookItem) then
+        PickupSpellBookItem(slot, bookType)
     else
-        CooldownFrame_Set = function(cooldown, start, duration, enable)
-            if cooldown then
-                if start and start > 0 and duration and duration > 0 and enable and enable > 0 then
-                    cooldown:SetCooldown(start, duration)
-                    cooldown:Show()
-                else
-                    cooldown:Hide()
-                end
-            end
-        end
-    end
-end
-
--- GameTooltip:SetSpellByID polyfill
--- In vanilla, we use GameTooltip:SetSpell(slot, bookType) instead
-if not GameTooltip.SetSpellByID then
-    GameTooltip.SetSpellByID = function(self, spellID, bookType)
-        -- spellID here is actually the spellbook slot index in our compat layer
-        if spellID and type(spellID) == "number" then
-            GameTooltip:SetSpell(spellID, bookType or BOOKTYPE_SPELL)
-        end
-    end
-end
-
--- GetTalentLink polyfill (talent links don't exist in vanilla)
-if not GetTalentLink then
-    GetTalentLink = function(tab, index)
-        local name = GetTalentInfo(tab, index)
-        if name then
-            return "|cff71d5ff[" .. name .. "]|r"
-        end
-        return nil
-    end
-end
-
--- PickupSpellBookItem polyfill (vanilla uses PickupSpell with slot+bookType)
-if not PickupSpellBookItem then
-    PickupSpellBookItem = function(slot, bookType)
         PickupSpell(slot, bookType or BOOKTYPE_SPELL)
     end
 end
@@ -234,33 +189,9 @@ MSB_ClassIndices = {
     ["DRUID"] = 11,
     ["DEMONHUNTER"] = 12,
 }
--- GetShapeshiftForm polyfill (may not exist in Turtle WoW)
-if not GetShapeshiftForm then
-    GetShapeshiftForm = function()
-        for i = 1, 20 do
-            local texture, name, isActive = GetShapeshiftFormInfo(i)
-            if not texture then return 0 end
-            if isActive then return i end
-        end
-        return 0
-    end
-end
-
 function MSB_GetClassIndex()
     local _, englishClass = UnitClass("player")
     return MSB_ClassIndices[englishClass] or 1
-end
-
--- GetShapeshiftFormInfo compatibility
--- Vanilla returns: texture, name, isActive, isCastable
--- Modern returns:  icon, active, castable, spellID
--- We wrap it to return modern-style values
-local originalGetShapeshiftFormInfo = GetShapeshiftFormInfo
-MSB_GetShapeshiftFormInfo = function(index)
-    local texture, name, isActive, isCastable = originalGetShapeshiftFormInfo(index)
-    if not texture then return nil end
-    -- Return in modern order: icon, isActive, isCastable, spellID(nil in vanilla)
-    return texture, isActive, isCastable, nil
 end
 
 -- Numeric texture ID to path mappings (FileDataIDs don't work in vanilla)
