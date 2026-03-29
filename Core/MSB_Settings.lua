@@ -142,12 +142,15 @@ class "CSettingsMenu"
 			info.value = "iconFrame"
 			UIDropDownMenu_AddButton(info, level)
 
-			-- Reset position
+			-- Reset position and scale
 			info = {}
-			info.text = "Reset position"
+			info.text = "Reset position & scale"
 			info.notCheckable = 1
 			info.func = function()
 				ModernSpellBook_DB.position = nil
+				ModernSpellBook_DB.windowScale = nil
+				ModernSpellBookFrame:SetScale(1)
+				SpellBookCloseButton:SetScale(1)
 				ModernSpellBookFrame:ClearAllPoints()
 				ModernSpellBookFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 				CloseDropDownMenus()

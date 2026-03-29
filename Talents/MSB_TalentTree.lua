@@ -106,6 +106,7 @@ MSB_TALENT_CONSTANTS.SPEC_DESCRIPTIONS = SPEC_DESCRIPTIONS
 class "CTalentTree"
 {
 	__init = function(self)
+		local tree = self
 		local panel_width = PANEL_WIDTH
 		local total_width = TOTAL_WIDTH
 		local total_height = TOTAL_HEIGHT
@@ -115,7 +116,8 @@ class "CTalentTree"
 		self.frame:SetWidth(total_width)
 		self.frame:SetHeight(total_height)
 		self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-		self.frame:SetFrameStrata("MEDIUM")
+		self.frame:SetFrameStrata("HIGH")
+		self.frame:SetFrameLevel(5)
 		self.frame:SetBackdrop({
 			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
@@ -127,14 +129,100 @@ class "CTalentTree"
 		self.frame:SetMovable(true)
 		self.frame:RegisterForDrag("LeftButton")
 		self.frame:SetScript("OnDragStart", function() this:StartMoving() end)
-		self.frame:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
+		self.frame:SetScript("OnDragStop", function()
+			this:StopMovingOrSizing()
+			local point, _, relPoint, x, y = this:GetPoint()
+			ModernSpellBook_DB.talentPosition = { point = point, relPoint = relPoint, x = x, y = y }
+		end)
 		self.frame:Hide()
 		table.insert(UISpecialFrames, "ModernTalentTreeFrame")
+
+		-- Restore saved position and scale
+		if (ModernSpellBook_DB and ModernSpellBook_DB.talentPosition) then
+			local pos = ModernSpellBook_DB.talentPosition
+			self.frame:ClearAllPoints()
+			self.frame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+		end
+		if (ModernSpellBook_DB and ModernSpellBook_DB.talentScale) then
+			self.frame:SetScale(ModernSpellBook_DB.talentScale)
+		end
 
 		-- Close button (high frame level so it stays above expanded view)
 		local close = CreateFrame("Button", nil, self.frame, "UIPanelCloseButton")
 		close:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -2, -2)
 		close:SetFrameLevel(self.frame:GetFrameLevel() + 20)
+
+		-- Settings button (top-right, left of close button)
+		local settingsBtn = CreateFrame("Button", nil, self.frame)
+		settingsBtn:SetWidth(20)
+		settingsBtn:SetHeight(20)
+		settingsBtn:SetPoint("RIGHT", close, "LEFT", -2, 0)
+		settingsBtn:SetFrameLevel(self.frame:GetFrameLevel() + 20)
+		settingsBtn:SetNormalTexture("Interface\\Icons\\INV_Misc_Gear_01")
+		settingsBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+		settingsBtn:SetPushedTexture("Interface\\Icons\\INV_Misc_Gear_01")
+		local talentSettingsDropdown = CreateFrame("Frame", "ModernTalentSettingsDropDown", self.frame)
+		talentSettingsDropdown.displayMode = "MENU"
+		talentSettingsDropdown.initialize = function(level)
+			local info = {}
+			info.text = "Reset position & scale"
+			info.notCheckable = 1
+			info.func = function()
+				ModernSpellBook_DB.talentPosition = nil
+				ModernSpellBook_DB.talentScale = nil
+				self.frame:SetScale(1)
+				self.frame:ClearAllPoints()
+				self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+				CloseDropDownMenus()
+			end
+			UIDropDownMenu_AddButton(info, level)
+		end
+		settingsBtn:SetScript("OnClick", function()
+			ToggleDropDownMenu(1, nil, talentSettingsDropdown, settingsBtn, 0, 0)
+		end)
+
+		-- Resize handle (bottom-right corner)
+		local resizeHandle = CreateFrame("Button", nil, self.frame)
+		resizeHandle:SetWidth(16)
+		resizeHandle:SetHeight(16)
+		resizeHandle:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -4, 4)
+		resizeHandle:SetFrameLevel(self.frame:GetFrameLevel() + 20)
+		local resizeTex = resizeHandle:CreateTexture(nil, "OVERLAY")
+		resizeTex:SetAllPoints(resizeHandle)
+		resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+		resizeHandle:SetScript("OnEnter", function()
+			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+		end)
+		resizeHandle:SetScript("OnLeave", function()
+			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+		end)
+		resizeHandle:SetScript("OnMouseDown", function()
+			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+			local startX, startY = GetCursorPosition()
+			local startScale = self.frame:GetScale()
+			local left, top = self.frame:GetLeft(), self.frame:GetTop()
+			local es = self.frame:GetEffectiveScale()
+			local screenLeft = left * es
+			local screenTop = top * es
+			resizeHandle:SetScript("OnUpdate", function()
+				local curX, curY = GetCursorPosition()
+				local dx = curX - startX
+				local dy = startY - curY
+				local delta = (dx + dy) / 2
+				local newScale = math.max(0.5, math.min(1.2, startScale + delta / 500))
+				self.frame:SetScale(newScale)
+				local nes = self.frame:GetEffectiveScale()
+				self.frame:ClearAllPoints()
+				self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenLeft / nes, screenTop / nes)
+			end)
+		end)
+		resizeHandle:SetScript("OnMouseUp", function()
+			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+			resizeHandle:SetScript("OnUpdate", nil)
+			ModernSpellBook_DB.talentScale = self.frame:GetScale()
+			local point, _, relPoint, x, y = self.frame:GetPoint()
+			ModernSpellBook_DB.talentPosition = { point = point, relPoint = relPoint, x = x, y = y }
+		end)
 
 		-- Title
 		self.title = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -151,7 +239,6 @@ class "CTalentTree"
 		-- Slash command: toggle custom talent UI on/off
 		self.enabled = true
 		SLASH_MSBT1 = "/msbt"
-		local tree = self
 		SlashCmdList["MSBT"] = function()
 			tree.enabled = not tree.enabled
 			if (tree.enabled) then

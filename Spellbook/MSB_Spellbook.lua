@@ -255,7 +255,59 @@ class "CSpellBook"
 			self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, windowSettings.posy)
 		end
 		self.frame:SetFrameStrata("HIGH")
+		self.frame:SetFrameLevel(50)
+		if (ModernSpellBook_DB.windowScale) then
+			self.frame:SetScale(ModernSpellBook_DB.windowScale)
+		end
 		HideUIPanel(self.frame)
+
+		-- Resize handle (bottom-right corner, adjusts scale via drag)
+		local resizeHandle = CreateFrame("Button", nil, self.frame)
+		resizeHandle:SetWidth(16)
+		resizeHandle:SetHeight(16)
+		resizeHandle:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -4, 4)
+		resizeHandle:SetFrameLevel(self.frame:GetFrameLevel() + 10)
+		local resizeTex = resizeHandle:CreateTexture(nil, "OVERLAY")
+		resizeTex:SetAllPoints(resizeHandle)
+		resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+		resizeHandle:SetScript("OnEnter", function()
+			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+		end)
+		resizeHandle:SetScript("OnLeave", function()
+			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+		end)
+		resizeHandle:SetScript("OnMouseDown", function()
+			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+			local startX, startY = GetCursorPosition()
+			local startScale = self.frame:GetScale()
+			-- Capture top-left in screen coords so we can pin it during resize
+			local left, top = self.frame:GetLeft(), self.frame:GetTop()
+			local es = self.frame:GetEffectiveScale()
+			local screenLeft = left * es
+			local screenTop = top * es
+			resizeHandle:SetScript("OnUpdate", function()
+				local curX, curY = GetCursorPosition()
+				local dx = curX - startX
+				local dy = startY - curY
+				local delta = (dx + dy) / 2
+				local newScale = math.max(0.5, math.min(1.2, startScale + delta / 500))
+				self.frame:SetScale(newScale)
+				SpellBookCloseButton:SetScale(newScale)
+				-- Re-anchor top-left to same screen position
+				local nes = self.frame:GetEffectiveScale()
+				self.frame:ClearAllPoints()
+				self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", screenLeft / nes, screenTop / nes)
+			end)
+		end)
+		resizeHandle:SetScript("OnMouseUp", function()
+			resizeTex:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+			resizeHandle:SetScript("OnUpdate", nil)
+			local newScale = self.frame:GetScale()
+			ModernSpellBook_DB.windowScale = newScale
+			-- Re-save position
+			local point, _, relPoint, x, y = self.frame:GetPoint()
+			ModernSpellBook_DB.position = { point = point, relPoint = relPoint, x = x, y = y }
+		end)
 
 		self.frame.title = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 		self.frame.title:SetPoint("TOP", self.frame, "TOP", 0, -24)
@@ -493,6 +545,9 @@ class "CSpellBook"
 		SpellBookCloseButton:ClearAllPoints()
 		SpellBookCloseButton:SetPoint("CENTER", self.frame.CloseButton, "CENTER", 0, 0)
 		SpellBookCloseButton:SetFrameStrata("DIALOG")
+		if (ModernSpellBook_DB.windowScale) then
+			SpellBookCloseButton:SetScale(ModernSpellBook_DB.windowScale)
+		end
 		self.frame.CloseButton:Disable()
 		self.frame.CloseButton:Hide()
 	end;
