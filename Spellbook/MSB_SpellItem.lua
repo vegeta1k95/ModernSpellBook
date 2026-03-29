@@ -282,12 +282,9 @@ class "CSpellItem"
 				end
 			end)
 			frame:SetScript("OnUpdate", function()
-				local start, duration, enable
-				if (spellInfo.bookType) then
-					start, duration, enable = GetSpellCooldown(spellInfo.spellID, spellInfo.bookType)
-				else
-					start, duration, enable = GetSpellCooldown(spellInfo.spellName)
-				end
+				if (not frame:IsVisible()) then return end
+				-- Always query by spell name to avoid CTD from stale slot indices
+				local start, duration, enable = GetSpellCooldown(spellInfo.castName or spellInfo.spellName)
 				if (start and cooldown) then
 					local cdFunc = CooldownFrame_SetTimer or CooldownFrame_Set
 					if (cdFunc) then cdFunc(cooldown, start, duration, enable) end

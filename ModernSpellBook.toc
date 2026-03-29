@@ -18,15 +18,16 @@ Lib\MSB_TextStyle.lua
 # Core
 Core\MSB_Localization.lua
 Core\MSB_Icon.lua
+Core\MSB_SlashCommands.lua
 
 # Spellbook
-Spellbook\MSB_Core.lua
+Spellbook\MSB_Spellbook.lua
 Spellbook\MSB_SpellData.lua
 Core\MSB_Settings.lua
 Spellbook\MSB_ActionBar.lua
-Spellbook\MSB_SpellbookIcon.lua
+Spellbook\MSB_SpellIcon.lua
 Spellbook\MSB_SpellItem.lua
-Spellbook\MSB_SpellFrame.lua
+Spellbook\MSB_CategoryItem.lua
 Spellbook\MSB_SearchBar.lua
 Spellbook\MSB_Stances.lua
 Spellbook\MSB_TrainerData.lua
@@ -35,9 +36,10 @@ Spellbook\MSB_Tabs.lua
 # Talents
 Talents\MSB_Talents.lua
 Talents\MSB_TalentIcon.lua
-Talents\MSB_TalentArrow.lua
+Talents\MSB_TalentConnection.lua
+Talents\MSB_TalentGrid.lua
+Talents\MSB_TalentExpanded.lua
 Talents\MSB_TalentTree.lua
 
 # Debug
-Debug\MSB_SlashCommands.lua
 Debug\MSB_Debug.lua
