@@ -6,6 +6,19 @@
 
 local TALENT_ASSETS = "Interface\\AddOns\\ModernSpellBook\\Assets\\Talents\\"
 
+-- Grid line alpha per class-spec: [englishClass][specIndex]
+local GRID_LINE_ALPHA = {
+	WARRIOR = {0.4, 0.4, 0.4},
+	PALADIN = {0.4, 0.5, 0.4},
+	HUNTER  = {0.6, 0.4, 0.4},
+	ROGUE   = {0.4, 0.4, 0.7},
+	PRIEST  = {0.4, 0.4, 0.5},
+	SHAMAN  = {0.4, 0.6, 0.4},
+	MAGE    = {0.4, 0.4, 0.7},
+	WARLOCK = {0.5, 0.4, 0.4},
+	DRUID   = {0.7, 0.4, 0.4},
+}
+
 class "CTalentGrid"
 {
 	__init = function(self, parent, tab_index, cell_size, offset_x, offset_y, haze_color, grid_rows)
@@ -40,6 +53,29 @@ class "CTalentGrid"
 			end
 		end
 
+		-- Ensure rows 3, 5, 7 have at least one exceptional talent
+		-- If none from API, promote a rank-1 talent in that row
+		local keyRows = {3, 5, 7}
+		for _, row in ipairs(keyRows) do
+			local hasExc = false
+			for _, talent in ipairs(self.icons) do
+				if (talent.tier == row and talent.is_exceptional) then
+					hasExc = true
+					break
+				end
+			end
+			if (not hasExc) then
+				for _, talent in ipairs(self.icons) do
+					if (talent.tier == row and talent.max_rank == 1) then
+						talent.is_exceptional = true
+						talent:ApplyFrameShape()
+						table.insert(self.exceptional_talents, talent)
+						break
+					end
+				end
+			end
+		end
+
 		-- Mark bottom-most talent as final
 		local maxTier = 0
 		for _, talent in ipairs(self.icons) do
@@ -49,6 +85,129 @@ class "CTalentGrid"
 			if (talent.tier == maxTier) then
 				talent.is_final = true
 				talent:ApplyFrameShape()
+			end
+		end
+
+		-- Build grid lines between adjacent talent cells
+		self.grid_lines = {}
+		local cellMap = {}
+		for _, talent in ipairs(self.icons) do
+			cellMap[(talent.tier) .. "," .. (talent.column)] = true
+		end
+
+		-- Grid line settings (defaults: vertical + diagonal on, horizontal off)
+		local gl = (ModernSpellBook_DB and ModernSpellBook_DB.talentGridLines)
+			or { vertical = true, diagonal = true, horizontal = true }
+
+		-- Collect all edges first
+		local edges = {}
+		for _, talent in ipairs(self.icons) do
+			local t, c = talent.tier, talent.column
+			local neighbors = {}
+			if (gl.vertical) then
+				table.insert(neighbors, {t + 1, c, "v"})
+			end
+			if (gl.diagonal) then
+				table.insert(neighbors, {t + 1, c - 1, "dl"})
+				table.insert(neighbors, {t + 1, c + 1, "dr"})
+			end
+			if (gl.horizontal) then
+				table.insert(neighbors, {t, c + 1, "h"})
+			end
+			for _, nb in ipairs(neighbors) do
+				local nt, nc, dir = nb[1], nb[2], nb[3]
+				if (cellMap[nt .. "," .. nc]) then
+					table.insert(edges, {t = t, c = c, nt = nt, nc = nc, dir = dir})
+				end
+			end
+		end
+
+		-- Remove crossing diagonals: if two diagonals in the same row pair
+		-- go in opposite directions and their column ranges overlap, skip one
+		local skipEdge = {}
+		for i = 1, table.getn(edges) do
+			for j = i + 1, table.getn(edges) do
+				local a, b = edges[i], edges[j]
+				if (a.t == b.t and (a.dir == "dl" or a.dir == "dr") and (b.dir == "dl" or b.dir == "dr")) then
+					-- Both are diagonals in the same row pair
+					-- They cross if one goes left and the other goes right
+					-- and their column ranges overlap
+					local a_min = math.min(a.c, a.nc)
+					local a_max = math.max(a.c, a.nc)
+					local b_min = math.min(b.c, b.nc)
+					local b_max = math.max(b.c, b.nc)
+					if (a.dir ~= b.dir and a_min < b_max and b_min < a_max) then
+						-- They cross — keep the one whose target is closer to column 2
+						local a_dist = math.abs(a.nc - 2)
+						local b_dist = math.abs(b.nc - 2)
+						if (a_dist <= b_dist) then
+							skipEdge[j] = true
+						else
+							skipEdge[i] = true
+						end
+					end
+				end
+			end
+		end
+
+		-- Grid lines frame: above background, below icons
+		local linesFrame = CreateFrame("Frame", nil, parent)
+		linesFrame:SetAllPoints(parent)
+		linesFrame:SetFrameLevel(parent:GetFrameLevel())
+		self.lines_frame = linesFrame
+
+		-- Determine line alpha for this class-spec
+		local _, englishClass = UnitClass("player")
+		local classAlphas = GRID_LINE_ALPHA[englishClass]
+		local lineAlpha = (classAlphas and classAlphas[tab_index]) or 0.2
+
+		self.haze_color = haze_color
+		self.line_alpha = lineAlpha
+
+		-- Create textures for non-skipped edges
+		for i, edge in ipairs(edges) do
+			if (not skipEdge[i]) then
+				local line = linesFrame:CreateTexture(nil, "OVERLAY")
+				line:SetBlendMode("ADD")
+				line:SetAlpha(lineAlpha)
+				if (haze_color) then
+					line:SetVertexColor(haze_color[1], haze_color[2], haze_color[3])
+				end
+				local cx = offset_x + (edge.c - 1) * cell_size + cell_size / 2
+				local cy = -(offset_y + (edge.t - 1) * cell_size + cell_size / 2)
+				if (edge.dir == "v") then
+					line:SetTexture(TALENT_ASSETS .. "line-v")
+					line:SetWidth(8)
+					line:SetHeight(cell_size)
+					line:SetPoint("TOP", parent, "TOPLEFT", cx, cy)
+				elseif (edge.dir == "dl") then
+					local ncx = offset_x + (edge.nc - 1) * cell_size + cell_size / 2
+					local ncy = -(offset_y + (edge.nt - 1) * cell_size + cell_size / 2)
+					line:SetTexture(TALENT_ASSETS .. "line-d")
+					line:SetWidth(36)
+					line:SetHeight(36)
+					line:SetTexCoord(1, 0, 0, 1)
+					line:SetPoint("CENTER", parent, "TOPLEFT", (cx + ncx) / 2, (cy + ncy) / 2)
+				elseif (edge.dir == "dr") then
+					local ncx = offset_x + (edge.nc - 1) * cell_size + cell_size / 2
+					local ncy = -(offset_y + (edge.nt - 1) * cell_size + cell_size / 2)
+					line:SetTexture(TALENT_ASSETS .. "line-d")
+					line:SetWidth(36)
+					line:SetHeight(36)
+					line:SetPoint("CENTER", parent, "TOPLEFT", (cx + ncx) / 2, (cy + ncy) / 2)
+				elseif (edge.dir == "h") then
+					line:SetTexture(TALENT_ASSETS .. "line-h")
+					line:SetWidth(cell_size)
+					line:SetHeight(8)
+					line:SetPoint("LEFT", parent, "TOPLEFT", cx, cy)
+				end
+				table.insert(self.grid_lines, {
+					tex = line,
+					src_tier = edge.t,
+					src_col = edge.c,
+					dst_tier = edge.nt,
+					dst_col = edge.nc,
+				})
 			end
 		end
 
@@ -148,6 +307,45 @@ class "CTalentGrid"
 			connData.connection:UpdateState(unlocked)
 		end
 
+		-- Grid line coloring + visibility
+		local gl = (ModernSpellBook_DB and ModernSpellBook_DB.talentGridLines) or {}
+		local coloring = gl.coloring or "unlocked"
+		local visibility = gl.visibility or "unlocked"
+
+		-- Build rank lookup: tier,col -> curr_rank
+		local rankMap = {}
+		for _, talent in ipairs(self.icons) do
+			rankMap[talent.tier .. "," .. talent.column] = talent.curr_rank
+		end
+
+		for _, lineData in ipairs(self.grid_lines) do
+			local srcRank = rankMap[lineData.src_tier .. "," .. lineData.src_col] or 0
+			local dstRank = rankMap[lineData.dst_tier .. "," .. lineData.dst_col] or 0
+			local bothInvested = (srcRank > 0 and dstRank > 0)
+
+			-- Visibility
+			if (visibility == "unlocked" and not bothInvested) then
+				lineData.tex:SetAlpha(0)
+			else
+				lineData.tex:SetAlpha(self.line_alpha)
+			end
+
+			-- Coloring
+			if (coloring == "never") then
+				lineData.tex:SetVertexColor(0.5, 0.5, 0.5)
+			elseif (coloring == "unlocked") then
+				if (bothInvested and self.haze_color) then
+					lineData.tex:SetVertexColor(self.haze_color[1], self.haze_color[2], self.haze_color[3])
+				else
+					lineData.tex:SetVertexColor(0.5, 0.5, 0.5)
+				end
+			else
+				if (self.haze_color) then
+					lineData.tex:SetVertexColor(self.haze_color[1], self.haze_color[2], self.haze_color[3])
+				end
+			end
+		end
+
 		-- Tier lock
 		local firstLockedTier = nil
 		local is_max_no_points = (UnitLevel("player") >= 60 and remaining <= 0)
@@ -182,6 +380,9 @@ class "CTalentGrid"
 		end
 		for _, connData in ipairs(self.connections) do
 			connData.connection:Clear()
+		end
+		if (self.lines_frame) then
+			self.lines_frame:Hide()
 		end
 		self.tier_lock:Hide()
 		self.tier_lock_text:Hide()

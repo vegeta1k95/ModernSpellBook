@@ -195,9 +195,13 @@ class "CExpandedSpecFrame"
 				lockTex:SetAlpha(1)
 			end
 
-			-- Talent icon
+			-- Talent icon (copy is_exceptional from grid talent in case it was promoted)
 			local icon = CTalentIcon(row, c.CELL_SIZE)
 			icon:SetTalentData(talent.talent_tab, talent.talent_index)
+			if (talent.is_exceptional and not icon.is_exceptional) then
+				icon.is_exceptional = true
+				icon:ApplyFrameShape()
+			end
 			if (icon.curr_rank >= icon.max_rank) then
 				if (icon.is_exceptional) then
 					icon.border:SetTexture(TALENT_ASSETS .. "talent-frame-square-gold")

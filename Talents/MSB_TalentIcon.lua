@@ -112,28 +112,8 @@ class "CTalentIcon"
 		self.column = column
 		self.curr_rank = currRank
 		self.max_rank = maxRank
-		self.is_exceptional = (isExceptional and isExceptional == 1) or (tier == 7)
+		self.is_exceptional = (isExceptional and isExceptional == 1)
 		self.icon_texture = iconTexture
-
-		-- Icon shape: exceptional → square + bigger, normal → circular mask
-		if (self.is_exceptional) then
-			self.icon:SetTexture(self.icon_texture)
-			self.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-			self.icon:SetWidth(TALENT_ICON_SIZE_EXCEPTIONAL)
-			self.icon:SetHeight(TALENT_ICON_SIZE_EXCEPTIONAL)
-			
-			self.hover_frame:SetWidth(TALENT_ICON_SIZE_EXCEPTIONAL)
-			self.hover_frame:SetHeight(TALENT_ICON_SIZE_EXCEPTIONAL)
-			self.hover_glow:SetTexture("Interface\\Buttons\\CheckButtonHilight")
-
-			if (maxRank == 1) then
-				self.rank_text:Hide()
-			end
-
-		else
-			SetPortraitToTexture(self.icon, self.icon_texture)
-			SetPortraitToTexture(self.hover_glow, "Interface\\Buttons\\CheckButtonHilight")
-		end
 
 		-- Query prerequisites
 		self.prereq_tier = nil
@@ -165,7 +145,7 @@ class "CTalentIcon"
 
 	ApplyFrameShape = function(self)
 		-- Fancy overlay for final talent (additional, not replacing border)
-		if (self.is_final and not self.fancy_frame) then
+		if (self.is_final and self.is_exceptional and not self.fancy_frame) then
 			local fancy_size = TALENT_ICON_SIZE_EXCEPTIONAL + 18
 			self.fancy_frame = CreateFrame("Frame", nil, self.frame)
 			self.fancy_frame:SetWidth(fancy_size)
@@ -178,6 +158,17 @@ class "CTalentIcon"
 		end
 
 		if (self.is_exceptional) then
+			self.icon:SetTexture(self.icon_texture)
+			self.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+			self.icon:SetWidth(TALENT_ICON_SIZE_EXCEPTIONAL)
+			self.icon:SetHeight(TALENT_ICON_SIZE_EXCEPTIONAL)
+			
+			self.hover_frame:SetWidth(TALENT_ICON_SIZE_EXCEPTIONAL)
+			self.hover_frame:SetHeight(TALENT_ICON_SIZE_EXCEPTIONAL)
+			self.hover_glow:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+		
+			self.rank_text:Hide()
+		
 			self.border:SetTexture(TALENT_ASSETS .. "talent-frame-square")
 			self.socket:SetTexture(TALENT_ASSETS .. "talent-socket-square")
 			self.border_frame:SetWidth(TALENT_ICON_SIZE_EXCEPTIONAL + 3.3)
@@ -185,6 +176,10 @@ class "CTalentIcon"
 			self.socket:SetWidth(self.size + 2)
 			self.socket:SetHeight(self.size + 2)
 		else
+		
+			SetPortraitToTexture(self.icon, self.icon_texture)
+			SetPortraitToTexture(self.hover_glow, "Interface\\Buttons\\CheckButtonHilight")
+		
 			self.border:SetTexture(TALENT_ASSETS .. "talent-frame-circle")
 			self.socket:SetTexture(TALENT_ASSETS .. "talent-socket-circle")
 			self.socket:SetWidth(self.size + 4)
@@ -234,11 +229,11 @@ class "CTalentIcon"
 			self.rank_text:SetTextColor(0.5, 0.5, 0.5)
 		
 			if (self.is_exceptional) then
-                self.icon:SetAlpha(0.5)
-                self.border:SetAlpha(0.6)
+                self.icon:SetAlpha(0.3)
+                self.border:SetAlpha(0.5)
             else
                 self.icon:SetAlpha(0.3)
-    			self.border:SetAlpha(0.4)
+    			self.border:SetAlpha(0.5)
             end
 			
 		else

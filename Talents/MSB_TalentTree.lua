@@ -148,38 +148,12 @@ class "CTalentTree"
 		end
 
 		-- Close button (high frame level so it stays above expanded view)
-		local close = CreateFrame("Button", nil, self.frame, "UIPanelCloseButton")
-		close:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -2, -2)
-		close:SetFrameLevel(self.frame:GetFrameLevel() + 20)
+		self.frame.CloseButton = CreateFrame("Button", nil, self.frame, "UIPanelCloseButton")
+		self.frame.CloseButton:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", 6, 6)
+		self.frame.CloseButton:SetFrameLevel(self.frame:GetFrameLevel() + 20)
 
-		-- Settings button (top-right, left of close button)
-		local settingsBtn = CreateFrame("Button", nil, self.frame)
-		settingsBtn:SetWidth(20)
-		settingsBtn:SetHeight(20)
-		settingsBtn:SetPoint("RIGHT", close, "LEFT", -2, 0)
-		settingsBtn:SetFrameLevel(self.frame:GetFrameLevel() + 20)
-		settingsBtn:SetNormalTexture("Interface\\Icons\\INV_Misc_Gear_01")
-		settingsBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
-		settingsBtn:SetPushedTexture("Interface\\Icons\\INV_Misc_Gear_01")
-		local talentSettingsDropdown = CreateFrame("Frame", "ModernTalentSettingsDropDown", self.frame)
-		talentSettingsDropdown.displayMode = "MENU"
-		talentSettingsDropdown.initialize = function(level)
-			local info = {}
-			info.text = "Reset position & scale"
-			info.notCheckable = 1
-			info.func = function()
-				ModernSpellBook_DB.talentPosition = nil
-				ModernSpellBook_DB.talentScale = nil
-				self.frame:SetScale(1)
-				self.frame:ClearAllPoints()
-				self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-				CloseDropDownMenus()
-			end
-			UIDropDownMenu_AddButton(info, level)
-		end
-		settingsBtn:SetScript("OnClick", function()
-			ToggleDropDownMenu(1, nil, talentSettingsDropdown, settingsBtn, 0, 0)
-		end)
+		-- Settings
+		self.settings = CTalentSettings(self.frame, self)
 
 		-- Resize handle (bottom-right corner)
 		local resizeHandle = CreateFrame("Button", nil, self.frame)
@@ -298,7 +272,7 @@ class "CTalentTree"
 		titleIconFrame:SetWidth(24)
 		titleIconFrame:SetHeight(24)
 		titleIconFrame:SetFrameLevel(self.frame:GetFrameLevel() + 20)
-		titleIconFrame:SetPoint("RIGHT", self.title, "LEFT", -4, 0)
+		titleIconFrame:SetPoint("RIGHT", self.title, "LEFT", -8, 0)
 		self.title_icon_frame = titleIconFrame
 		local titleIcon = titleIconFrame:CreateTexture(nil, "OVERLAY")
 		titleIcon:SetAllPoints(titleIconFrame)
@@ -410,6 +384,27 @@ class "CTalentTree"
 				tab_icon = tabIcon,
 			})
 		end
+	end;
+
+	-- ==================== REBUILD GRIDS ===========================
+
+	RebuildAllGrids = function(self)
+		local _, englishClass = UnitClass("player")
+		local col_offset = (GRID_COLS_MAX - GRID_COLS_DEFAULT) * CELL_SIZE / 2
+		local classColors = SPEC_HAZE_COLORS[englishClass]
+		for _, spec in ipairs(self.specs) do
+			spec.grid:Hide()
+			local haze_color = (classColors and classColors[spec.tab_index]) or DEFAULT_HAZE_COLOR
+			spec.grid = CTalentGrid(spec.panel, spec.tab_index, CELL_SIZE,
+				PANEL_INNER_PAD + col_offset, HEADER_HEIGHT + GRID_VERT_PAD,
+				haze_color, GRID_ROWS)
+		end
+		-- Rebuild expanded view if open
+		if (self.expanded_spec) then
+			local spec = self.specs[self.expanded_spec]
+			self.expanded_view:Show(spec, self.expanded_spec, classColors)
+		end
+		self:Refresh()
 	end;
 
 	-- ==================== EXPAND / COLLAPSE =======================

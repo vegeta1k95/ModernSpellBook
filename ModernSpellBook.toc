@@ -39,6 +39,7 @@ Talents\MSB_TalentIcon.lua
 Talents\MSB_TalentConnection.lua
 Talents\MSB_TalentGrid.lua
 Talents\MSB_TalentExpanded.lua
+Talents\MSB_TalentSettings.lua
 Talents\MSB_TalentTree.lua
 
 # Debug

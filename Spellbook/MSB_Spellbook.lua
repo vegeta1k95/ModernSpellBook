@@ -34,7 +34,7 @@ class "CSpellBook"
 		})
 		self.frame:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
 		self.frame.CloseButton = CreateFrame("Button", nil, self.frame, "UIPanelCloseButton")
-		self.frame.CloseButton:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -2, -2)
+		self.frame.CloseButton:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", 6, 6)
 
 		-- Event dispatch (vanilla calling convention)
 		local spellBook = self
