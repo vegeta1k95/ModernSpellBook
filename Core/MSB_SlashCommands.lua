@@ -1,6 +1,7 @@
 --[[
 	Slash commands for ModernSpellBook.
 	/msb          - Toggle between modern and vanilla spellbook
+	/msb talents  - Toggle between modern and vanilla talent tree
 	/msb reset    - Reset all settings to defaults
 	/msb rescan   - Clear trainer cache (rescan on next trainer visit)
 --]]
@@ -24,6 +25,8 @@ class "CSlashCommands"
 
 		if (cmd == "") then
 			self:Toggle()
+		elseif (cmd == "talents") then
+			self:ToggleTalents()
 		elseif (cmd == "reset") then
 			self:ResetSettings()
 		elseif (cmd == "rescan") then
@@ -87,6 +90,19 @@ class "CSlashCommands"
 		DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Enabled.")
 	end;
 
+	-- ====================== TALENTS ==============================
+
+	ToggleTalents = function(self)
+		if (not TalentTree) then return end
+		TalentTree.enabled = not TalentTree.enabled
+		if (TalentTree.enabled) then
+			DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Custom talent tree |cff00ff00enabled|r")
+		else
+			DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Custom talent tree |cffff4444disabled|r (using vanilla)")
+			TalentTree.frame:Hide()
+		end
+	end;
+
 	-- ======================= COMMANDS =============================
 
 	ResetSettings = function(self)
@@ -138,6 +154,7 @@ class "CSlashCommands"
 	PrintHelp = function(self)
 		DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook|r commands:")
 		DEFAULT_CHAT_FRAME:AddMessage("  /msb - Toggle between modern and vanilla spellbook")
+		DEFAULT_CHAT_FRAME:AddMessage("  /msb talents - Toggle between modern and vanilla talent tree")
 		DEFAULT_CHAT_FRAME:AddMessage("  /msb reset - Reset settings to defaults")
 		DEFAULT_CHAT_FRAME:AddMessage("  /msb rescan - Clear trainer cache")
 	end;

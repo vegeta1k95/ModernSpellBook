@@ -199,20 +199,7 @@ class "CTalentTree"
 		self.points_text:SetFont("Fonts\\FRIZQT__.TTF", 14)
 		self.points_text:SetTextColor(1.0, 1.0, 1.0)
 
-		-- Slash command: toggle custom talent UI on/off
 		self.enabled = true
-		SLASH_MSBT1 = "/msbt"
-		SlashCmdList["MSBT"] = function()
-			tree.enabled = not tree.enabled
-			if (tree.enabled) then
-				DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Custom talent tree |cff00ff00enabled|r")
-				if (tree.frame:IsVisible()) then return end
-				tree.frame:Hide()
-			else
-				DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ModernSpellBook:|r Custom talent tree |cffff4444disabled|r (using vanilla)")
-				tree.frame:Hide()
-			end
-		end
 
 		-- Event handling
 		self.event_frame = CreateFrame("Frame")
