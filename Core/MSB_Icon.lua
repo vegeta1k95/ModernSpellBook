@@ -55,7 +55,7 @@ class "CIcon"
 			self.cooldown:SetPoint("TOPLEFT", self.icon, "TOPLEFT", 0, 0)
 			self.cooldown:SetPoint("BOTTOMRIGHT", self.icon, "BOTTOMRIGHT", 0, 0)
 			if (self.cooldown.SetDrawEdge) then
-				self.cooldown:SetDrawEdge(false)
+				pcall(function() self.cooldown:SetDrawEdge(false) end)
 			end
 		else
 			self.cooldown = nil
